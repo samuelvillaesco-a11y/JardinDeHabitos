@@ -199,6 +199,75 @@ public class CheckInProcessorTests
     }
 
     [Fact]
+    public void Muerte_TrasFrutaLegendaria_DisparaLeyendaCaida()
+    {
+        var h = NuevoHabito(D.AddDays(-365));
+        En(0, h, CheckInResult.Roto);
+        En(1, h, CheckInResult.Roto);
+        var r = En(2, h, CheckInResult.Roto);
+
+        Assert.True(r.ArbolMurio);
+        Assert.True(r.LeyendaCaida);
+    }
+
+    [Fact]
+    public void Muerte_AntesDeLegendaria_NoDispara()
+    {
+        // Muere en el día 364 de la racha.
+        var h = NuevoHabito(D.AddDays(-362));
+        En(0, h, CheckInResult.Roto);
+        En(1, h, CheckInResult.Roto);
+        var r = En(2, h, CheckInResult.Roto);
+
+        Assert.True(r.ArbolMurio);
+        Assert.False(r.LeyendaCaida);
+    }
+
+    [Fact]
+    public void Cicatrices_NoBorrablesAntesDe180Dias()
+    {
+        var h = NuevoHabito(D.AddDays(-179));
+        En(0, h, CheckInResult.Roto);
+
+        Assert.False(_proc.PuedeBorrarCicatrices(h, _estado));
+        Assert.Throws<InvalidOperationException>(() => _proc.BorrarCicatrices(h, _estado));
+        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+    }
+
+    [Fact]
+    public void Cicatrices_BorrablesA180Dias()
+    {
+        var h = NuevoHabito(D.AddDays(-179));
+        En(0, h, CheckInResult.Roto);
+        En(1, h, CheckInResult.Roto); // día 180 de la racha
+
+        Assert.True(_proc.PuedeBorrarCicatrices(h, _estado));
+        _proc.BorrarCicatrices(h, _estado);
+
+        Assert.Equal(0, _estado.StrikesTotalesDelArbolActual);
+        Assert.Equal(2, _estado.RachaConsecutivaDeDiasRotos);
+    }
+
+    [Fact]
+    public void Cicatrices_SinCicatricesNoHayNadaQueBorrar()
+    {
+        var h = NuevoHabito(D.AddDays(-200));
+        En(0, h, CheckInResult.Cumplido);
+
+        Assert.False(_proc.PuedeBorrarCicatrices(h, _estado));
+    }
+
+    [Fact]
+    public void Cicatrices_NoSeBorranSolas()
+    {
+        var h = NuevoHabito(D.AddDays(-179));
+        En(0, h, CheckInResult.Roto);
+        En(1, h, CheckInResult.Cumplido); // llega a 180 días
+
+        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+    }
+
+    [Fact]
     public void StrikeNoReiniciaCrecimiento()
     {
         var h = NuevoHabito(D.AddDays(-10));

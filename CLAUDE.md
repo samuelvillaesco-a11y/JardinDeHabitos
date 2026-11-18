@@ -45,8 +45,18 @@ Hecho: `GrowthStageCalculator` (etapa a partir de días transcurridos, umbrales 
 
 Decisión tomada: umbrales largos en **días fijos**, no meses de calendario: 1 mes = 30 días, 6 meses = 180, 1 año = 365. Toda la lógica recibe un `TimeProvider` inyectado (nunca `DateTime.Now` directo).
 
+Hecho: `CheckInProcessor` + `CheckInOutcome` (tests en `CheckInProcessorTests.cs`). Plan en `docs/superpowers/plans/2026-11-18-checkin-strikes.md`. Decisiones:
+- `FechaFinDePenalizacionActiva` es exclusiva (activa mientras hoy < fin); Strike1 = hoy+2, Strike2 = fin+5.
+- Strikes 1-2 NO reinician el crecimiento; solo la muerte pone `FechaDeInicioRachaActual = hoy`.
+- CheatDay es neutral (no suma ni reinicia racha); en `AbstinenciaTotal` lanza excepción.
+- Un solo check-in por día (`StrikeState.FechaUltimoCheckIn`); el segundo lanza excepción.
+- LeyendaCaida = etapa FrutaLegendaria justo antes de morir (sin campo extra). Persistir logros a nivel usuario queda pendiente.
+- Cicatrices: `PuedeBorrarCicatrices`/`BorrarCicatrices` desde 180 días, nunca automático.
+- Días sin check-in (huecos) aún no cuentan como rotos: pendiente decidir.
+
 ## Siguiente paso
 
 1. ~~Clase que calcula `GrowthStage` + modo acelerado~~ (hecho).
-2. Clase que procesa un check-in diario, actualiza `StrikeState` (ambos contadores) y decide si el árbol muere.
-3. Tests xUnit cubriendo: crecimiento normal por cada etapa, 1 strike, 2 strikes seguidos, 3 strikes seguidos (muerte + reset), un día limpio en medio, y el hito de 6 meses.
+2. ~~Procesador de check-in diario + strikes + muerte~~ (hecho).
+3. ~~Tests xUnit de crecimiento, strikes, muerte y hito de 6 meses~~ (hecho).
+4. Decidir qué pasa con días sin check-in; modelo de logros de usuario; luego persistencia SQLite.

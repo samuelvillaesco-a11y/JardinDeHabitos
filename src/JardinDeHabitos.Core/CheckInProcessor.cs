@@ -49,11 +49,28 @@ public class CheckInProcessor(GrowthStageCalculator calculadora)
                 estado.FechaFinDePenalizacionActiva = (estado.FechaFinDePenalizacionActiva ?? hoy).AddDays(DiasCuidadoStrike2);
                 break;
             case >= RotosParaMorir:
+                // La etapa solo baja al morir: se mide antes de reiniciar la racha.
+                var eraLegendaria = calculadora.CalcularEtapa(habito) == GrowthStage.FrutaLegendaria;
                 Morir(habito, estado, hoy);
-                return Resultado(estado, murio: true);
+                return Resultado(estado, murio: true, leyendaCaida: eraLegendaria);
         }
 
         return Resultado(estado, murio: false);
+    }
+
+    /// <summary>
+    /// Opción (nunca automática) de borrar las cicatrices cuando el árbol llega a 6 meses.
+    /// </summary>
+    public bool PuedeBorrarCicatrices(Habit habito, StrikeState estado) =>
+        estado.StrikesTotalesDelArbolActual > 0
+        && calculadora.CalcularEtapa(habito) >= GrowthStage.FrutaComestible;
+
+    public void BorrarCicatrices(Habit habito, StrikeState estado)
+    {
+        if (!PuedeBorrarCicatrices(habito, estado))
+            throw new InvalidOperationException("Las cicatrices solo se pueden borrar a partir de los 6 meses.");
+
+        estado.StrikesTotalesDelArbolActual = 0;
     }
 
     /// <summary>La fecha fin es exclusiva: la penalización vale mientras hoy &lt; fin.</summary>
@@ -75,8 +92,8 @@ public class CheckInProcessor(GrowthStageCalculator calculadora)
         habito.FechaDeInicioRachaActual = hoy;
     }
 
-    private static CheckInOutcome Resultado(StrikeState estado, bool murio) =>
-        new(murio, estado.NivelDePenalizacion, estado.FechaFinDePenalizacionActiva, LeyendaCaida: false);
+    private static CheckInOutcome Resultado(StrikeState estado, bool murio, bool leyendaCaida = false) =>
+        new(murio, estado.NivelDePenalizacion, estado.FechaFinDePenalizacionActiva, leyendaCaida);
 
     private static PenaltyLevel Max(PenaltyLevel a, PenaltyLevel b) => a >= b ? a : b;
 
