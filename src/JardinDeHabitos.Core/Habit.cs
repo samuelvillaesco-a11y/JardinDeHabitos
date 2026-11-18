@@ -7,4 +7,5 @@ public class Habit
     public required string EspecieDeArbol { get; set; }
     public required HabitType Tipo { get; set; }
     public DateOnly FechaDeInicioRachaActual { get; set; }
+    public List<DayOfWeek> DiasDeCheat { get; set; } = [];
 }

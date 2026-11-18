@@ -167,6 +167,7 @@ public class CheckInProcessorTests
     public void CheatDay_EnModerable_EsNeutral()
     {
         var h = NuevoHabito(D, HabitType.Moderable);
+        h.DiasDeCheat = [DayOfWeek.Friday]; // D+1 es viernes
         En(0, h, CheckInResult.Roto);
         En(1, h, CheckInResult.CheatDay);
 

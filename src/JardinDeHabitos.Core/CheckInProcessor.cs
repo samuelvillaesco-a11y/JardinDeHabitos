@@ -18,10 +18,16 @@ public class CheckInProcessor(GrowthStageCalculator calculadora)
             throw new InvalidOperationException("Ya hubo check-in hoy (o el reloj retrocedió) para este hábito.");
         if (resultado == CheckInResult.CheatDay && habito.Tipo != HabitType.Moderable)
             throw new InvalidOperationException("Los cheat days solo aplican a hábitos Moderable.");
+        var esDiaDeCheat = CheatDaySchedule.EsDiaDeCheat(habito, hoy);
+        if (resultado == CheckInResult.CheatDay && !esDiaDeCheat)
+            throw new InvalidOperationException("Hoy no es cheat day para este hábito.");
+        if (resultado != CheckInResult.CheatDay && esDiaDeCheat)
+            throw new InvalidOperationException("Hoy es cheat day: no se pide check-in.");
 
-        if (estado.FechaUltimoCheckIn is { } previo && previo < hoy.AddDays(-1))
+        if (estado.FechaUltimoCheckIn is { } previo && CheatDaySchedule.HayDiaNormalEntre(habito, previo, hoy))
         {
-            // Hubo un hueco sin check-in: los rotos ya no son "seguidos".
+            // Hubo un día normal sin check-in: los rotos ya no son "seguidos".
+            // Los cheat days no cuentan como hueco.
             estado.RachaConsecutivaDeDiasRotos = 0;
         }
 
