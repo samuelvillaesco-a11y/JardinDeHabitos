@@ -14,10 +14,16 @@ public class CheckInProcessor(GrowthStageCalculator calculadora)
     {
         var hoy = calculadora.Hoy;
 
-        if (estado.FechaUltimoCheckIn == hoy)
-            throw new InvalidOperationException("Ya hubo check-in hoy para este hábito.");
+        if (estado.FechaUltimoCheckIn is { } ultimo && hoy <= ultimo)
+            throw new InvalidOperationException("Ya hubo check-in hoy (o el reloj retrocedió) para este hábito.");
         if (resultado == CheckInResult.CheatDay && habito.Tipo != HabitType.Moderable)
             throw new InvalidOperationException("Los cheat days solo aplican a hábitos Moderable.");
+
+        if (estado.FechaUltimoCheckIn is { } previo && previo < hoy.AddDays(-1))
+        {
+            // Hubo un hueco sin check-in: los rotos ya no son "seguidos".
+            estado.RachaConsecutivaDeDiasRotos = 0;
+        }
 
         estado.FechaUltimoCheckIn = hoy;
         ExpirarPenalizacion(estado, hoy);

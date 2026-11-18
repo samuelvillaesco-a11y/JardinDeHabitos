@@ -49,10 +49,12 @@ Hecho: `CheckInProcessor` + `CheckInOutcome` (tests en `CheckInProcessorTests.cs
 - `FechaFinDePenalizacionActiva` es exclusiva (activa mientras hoy < fin); Strike1 = hoy+2, Strike2 = fin+5.
 - Strikes 1-2 NO reinician el crecimiento; solo la muerte pone `FechaDeInicioRachaActual = hoy`.
 - CheatDay es neutral (no suma ni reinicia racha); en `AbstinenciaTotal` lanza excepción.
-- Un solo check-in por día (`StrikeState.FechaUltimoCheckIn`); el segundo lanza excepción.
+- Un solo check-in por día (`StrikeState.FechaUltimoCheckIn`); repetir o con reloj hacia atrás lanza excepción.
+- Si hay un hueco sin check-in entre dos rotos, ya no son "seguidos": la racha vuelve a 0 (las cicatrices sí suman).
 - LeyendaCaida = etapa FrutaLegendaria justo antes de morir (sin campo extra). Persistir logros a nivel usuario queda pendiente.
 - Cicatrices: `PuedeBorrarCicatrices`/`BorrarCicatrices` desde 180 días, nunca automático.
 - Días sin check-in (huecos) aún no cuentan como rotos: pendiente decidir.
+- PENDIENTE: CheatDay hoy se acepta cualquier día y sin límite. Falta modelar los 1-2 días fijos por semana (plantilla editable cada sábado) y validar contra ellos.
 
 ## Siguiente paso
 

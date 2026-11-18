@@ -268,6 +268,28 @@ public class CheckInProcessorTests
     }
 
     [Fact]
+    public void RotosSeparadosPorHueco_NoSonSeguidos()
+    {
+        var h = NuevoHabito(D);
+        En(0, h, CheckInResult.Roto);
+        var r = En(5, h, CheckInResult.Roto);
+
+        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
+        Assert.Equal(PenaltyLevel.Strike1, r.Penalizacion);
+        Assert.Equal(2, _estado.StrikesTotalesDelArbolActual);
+    }
+
+    [Fact]
+    public void RelojHaciaAtras_CheckInRechazado()
+    {
+        var h = NuevoHabito(D);
+        En(1, h, CheckInResult.Roto);
+
+        Assert.Throws<InvalidOperationException>(() => En(0, h, CheckInResult.Roto));
+        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+    }
+
+    [Fact]
     public void StrikeNoReiniciaCrecimiento()
     {
         var h = NuevoHabito(D.AddDays(-10));
