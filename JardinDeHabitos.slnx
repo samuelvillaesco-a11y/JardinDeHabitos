@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/JardinDeHabitos.App/JardinDeHabitos.App.csproj" />
     <Project Path="src/JardinDeHabitos.Core/JardinDeHabitos.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
