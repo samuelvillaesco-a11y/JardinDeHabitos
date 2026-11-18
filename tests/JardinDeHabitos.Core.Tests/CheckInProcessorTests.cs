@@ -156,6 +156,49 @@ public class CheckInProcessorTests
     }
 
     [Fact]
+    public void CheatDay_EnAbstinenciaTotal_Lanza()
+    {
+        var h = NuevoHabito(D, HabitType.AbstinenciaTotal);
+
+        Assert.Throws<InvalidOperationException>(() => En(0, h, CheckInResult.CheatDay));
+    }
+
+    [Fact]
+    public void CheatDay_EnModerable_EsNeutral()
+    {
+        var h = NuevoHabito(D, HabitType.Moderable);
+        En(0, h, CheckInResult.Roto);
+        En(1, h, CheckInResult.CheatDay);
+
+        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
+        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+
+        var r = En(2, h, CheckInResult.Roto);
+        Assert.Equal(PenaltyLevel.Strike2, r.Penalizacion);
+        Assert.Equal(2, _estado.RachaConsecutivaDeDiasRotos);
+    }
+
+    [Fact]
+    public void DobleCheckInMismoDia_Lanza()
+    {
+        var h = NuevoHabito(D);
+        En(0, h, CheckInResult.Roto);
+
+        Assert.Throws<InvalidOperationException>(() => En(0, h, CheckInResult.Roto));
+        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+    }
+
+    [Fact]
+    public void CheckInDiaSiguiente_Permitido()
+    {
+        var h = NuevoHabito(D);
+        En(0, h, CheckInResult.Cumplido);
+        En(1, h, CheckInResult.Cumplido);
+
+        Assert.Equal(D.AddDays(1), _estado.FechaUltimoCheckIn);
+    }
+
+    [Fact]
     public void StrikeNoReiniciaCrecimiento()
     {
         var h = NuevoHabito(D.AddDays(-10));

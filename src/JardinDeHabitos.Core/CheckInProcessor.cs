@@ -13,7 +13,20 @@ public class CheckInProcessor(GrowthStageCalculator calculadora)
     public CheckInOutcome Procesar(Habit habito, StrikeState estado, CheckInResult resultado)
     {
         var hoy = calculadora.Hoy;
+
+        if (estado.FechaUltimoCheckIn == hoy)
+            throw new InvalidOperationException("Ya hubo check-in hoy para este hábito.");
+        if (resultado == CheckInResult.CheatDay && habito.Tipo != HabitType.Moderable)
+            throw new InvalidOperationException("Los cheat days solo aplican a hábitos Moderable.");
+
+        estado.FechaUltimoCheckIn = hoy;
         ExpirarPenalizacion(estado, hoy);
+
+        if (resultado == CheckInResult.CheatDay)
+        {
+            // Neutral: ni suma ni reinicia la racha.
+            return Resultado(estado, murio: false);
+        }
 
         if (resultado == CheckInResult.Cumplido)
         {
