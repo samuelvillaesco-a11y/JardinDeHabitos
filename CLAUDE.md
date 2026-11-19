@@ -56,9 +56,9 @@ Hecho: `CheckInProcessor` + `CheckInOutcome` (tests en `CheckInProcessorTests.cs
 - Días sin check-in (huecos) aún no cuentan como rotos: pendiente decidir.
 - PENDIENTE: CheatDay hoy se acepta cualquier día y sin límite. Falta modelar los 1-2 días fijos por semana (plantilla editable cada sábado) y validar contra ellos.
 
-## Checkpoint 2026-11-18 (rama `fase1/app`, pausado por el usuario)
+## Checkpoint 2026-11-18 (Fase 1 terminada, unida a `main`)
 
-Hecho (todo commiteado, 79/79 tests Core verdes):
+Hecho (todo commiteado, 86/86 tests Core verdes):
 - Core: calendario de cheat days (edición del sábado rige desde el domingo), `GardenService`, logros (LeyendaCaida secreta), `SqliteGardenStore`.
 - App MAUI Android (`src/JardinDeHabitos.App`): jardín en cuadrícula, árbol con cielo, check-in, mini-juegos con gestos (bichos, raíces, regar, podar), logros, aviso de día libre 9:00, galería de etapas solo en Debug.
 - Probado en emulador `Jardin_API36` (arrancar CON ventana; sin ventana el emulador se cae con exit 139).
@@ -68,7 +68,7 @@ Pendiente (en este orden):
 1. ~~Probar en emulador refresco al volver y `Intentar(...)`~~ (hecho 2026-11-18: jardín y árbol se releen al cambiar de día en segundo plano; doble toque en check-in no cierra la app).
 2. ~~Menores diferidos~~ (hecho 2026-11-18, probado en emulador): doble toque ya no duplica (navegar, plantar, check-in); check-in + logros en una transacción SQLite (`IGardenStore.EnTransaccion`); esquema versionado con `PRAGMA user_version` (`SqliteGardenStore.VersionActual = 1`, cada cambio de esquema agrega un paso en `Migrar()`; base más nueva que la app lanza error); receptor de aviso con try/catch; aviso se reprograma al encender (`ReprogramarAvisoReceiver`, permiso `RECEIVE_BOOT_COMPLETED`); texto de muerte corregido; timer del árbol a 1 Hz y 30 Hz solo durante mini-juego. 84/84 tests.
    - Modo acelerado (solo Debug): botón en el jardín, 1 día = 1 min, base aparte `jardin-acelerado.db3` que se borra al encender; ancla guardada en Preferences (`RelojAcelerado` acepta `ancla`), así el tiempo sigue tras reiniciar. Release no lo incluye.
-3. Merge de `fase1/app` a `main` y decidir si se instala el APK en el teléfono.
+3. ~~Merge a `main` e instalar en el teléfono~~ (hecho 2026-11-18: `main` fast-forward; APK Release instalado y abierto en el teléfono). Firmado con la llave debug de .NET (`~/.local/share/Xamarin/Mono for Android/debug.keystore`): las actualizaciones futuras deben firmarse con la misma llave o habrá que desinstalar (y se pierden los datos).
 
 ## Siguiente paso
 
