@@ -100,3 +100,20 @@ public class LogrosTests
         Assert.Equal("7 días cumpliendo tu meta con el cigarro y el vapeo.", d.TextoNivel(2));
     }
 }
+
+public class EstanteRangoTests
+{
+    private static EntradaEstante E(string id, int nivel) => new(CatalogoLogros.De(id), nivel, null, 0, null);
+
+    [Theory]
+    [InlineData("gen.semilla", 0, Rango.SinGanar)]
+    [InlineData("gen.semilla", 1, Rango.Bronce)]
+    [InlineData("gen.semilla", 2, Rango.Plata)]
+    [InlineData("gen.semilla", 3, Rango.Oro)]
+    [InlineData("gen.honesto", 1, Rango.Oro)]
+    [InlineData("mal.ceniza", 0, Rango.SinGanar)]
+    [InlineData("mal.ceniza", 1, Rango.Maldito)]
+    [InlineData("leg.fenix", 1, Rango.Legendario)]
+    public void Rango_SaleDeLasEstrellas(string id, int nivel, Rango esperado) =>
+        Assert.Equal(esperado, E(id, nivel).Rango);
+}

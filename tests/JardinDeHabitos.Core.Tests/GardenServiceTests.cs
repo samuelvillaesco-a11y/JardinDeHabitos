@@ -357,6 +357,21 @@ public class GardenServiceTests
     }
 
     [Fact]
+    public void Estante_NuevoHastaAbrirlo_YVuelveConLaSiguienteEstrella()
+    {
+        Crear();
+        Assert.True(_svc.Estante().Single(e => e.Def.Id == "gen.semilla").Nuevo);
+
+        _svc.MarcarVisto("gen.semilla");
+        Assert.False(_svc.Estante().Single(e => e.Def.Id == "gen.semilla").Nuevo);
+        Assert.False(_svc.Estante().Single(e => e.Def.Id == "gen.cura").Nuevo); // sin ganar: nunca "nuevo"
+
+        Crear(MalHabito.Sal, "Naranjo");
+        Crear(MalHabito.Azucares, "Mango");
+        Assert.True(_svc.Estante().Single(e => e.Def.Id == "gen.semilla").Nuevo); // ★★
+    }
+
+    [Fact]
     public void HabitoInexistente_Lanza() =>
         Assert.Throws<KeyNotFoundException>(() => _svc.RegistrarJuego(Guid.NewGuid(), MiniJuegoTipo.Regar));
 }

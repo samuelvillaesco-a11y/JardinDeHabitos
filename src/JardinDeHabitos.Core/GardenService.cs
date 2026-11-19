@@ -70,6 +70,7 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
     private const string UltimoDiaMimo = "ultimoDiaMimo";
     private const string UltimoDiaJardinCompleto = "ultimoDiaJardinCompleto";
     private const string CenizaHabito = "cenizaHabito";
+    private const string Visto = "visto:";
 
     private static readonly GrowthStage[] EtapasAvisables =
         [GrowthStage.Flor, GrowthStage.FrutaInmadura, GrowthStage.FrutaComestible, GrowthStage.FrutaLegendaria];
@@ -127,9 +128,18 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
                 string? arbol = def.Habito is { } h
                     ? arboles.FirstOrDefault(r => r.Habito.Categoria == h)?.Habito.EspecieDeArbol
                     : null;
-                return new EntradaEstante(def, top?.Nivel ?? 0, top?.Fecha, stats.GetValueOrDefault(def.Clave), arbol);
+                int nivel = top?.Nivel ?? 0;
+                bool nuevo = nivel > stats.GetValueOrDefault(Visto + def.Id);
+                return new EntradaEstante(def, nivel, top?.Fecha, stats.GetValueOrDefault(def.Clave), arbol, nuevo);
             }),
         ];
+    }
+
+    /// <summary>El usuario abrió el emblema: deja de marcarse como nuevo (hasta su siguiente estrella).</summary>
+    public void MarcarVisto(string logroId)
+    {
+        int nivel = store.NivelesLogro().Where(n => n.Id == logroId).Select(n => n.Nivel).DefaultIfEmpty(0).Max();
+        Cambiar(s => s.Max(Visto + logroId, nivel));
     }
 
     public IReadOnlySet<Debuff> Debuffs() => EvaluadorLogros.Debuffs(store.NivelesLogro());

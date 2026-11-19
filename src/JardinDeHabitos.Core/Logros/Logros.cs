@@ -54,8 +54,36 @@ public sealed record LogroDef(
 
 public sealed record NivelLogro(string Id, int Nivel, DateOnly Fecha);
 
-/// <summary>Una fila del estante: el logro, el nivel ganado (0 = aún no) y cuánto lleva.</summary>
-public sealed record EntradaEstante(LogroDef Def, int Nivel, DateOnly? Fecha, int Progreso, string? Arbol);
+/// <summary>Rango del emblema: el metal sale de qué tan completo está el logro.</summary>
+public enum Rango
+{
+    SinGanar,
+    Bronce,
+    Plata,
+    Oro,
+    Maldito,
+    Legendario,
+}
+
+/// <summary>
+/// Una fila del estante: el logro, el nivel ganado (0 = aún no), cuánto lleva y si hay un nivel
+/// que el usuario todavía no ha abierto (<see cref="Nuevo"/>).
+/// </summary>
+public sealed record EntradaEstante(LogroDef Def, int Nivel, DateOnly? Fecha, int Progreso, string? Arbol, bool Nuevo = false)
+{
+    /// <summary>
+    /// Bronce/plata/oro según las estrellas. Un logro de un solo nivel ganado es oro (está completo);
+    /// uno de dos niveles: plata y luego oro.
+    /// </summary>
+    public Rango Rango => Def.Categoria switch
+    {
+        CategoriaLogro.Maldito when Nivel > 0 => Rango.Maldito,
+        CategoriaLogro.Legendario when Nivel > 0 => Rango.Legendario,
+        _ when Nivel <= 0 => Rango.SinGanar,
+        _ when Nivel >= Def.Niveles.Length => Rango.Oro,
+        _ => Nivel == 1 && Def.Niveles.Length == 3 ? Rango.Bronce : Rango.Plata,
+    };
+}
 
 /// <summary>Claves de las estadísticas que alimentan los logros.</summary>
 public static class Stat
