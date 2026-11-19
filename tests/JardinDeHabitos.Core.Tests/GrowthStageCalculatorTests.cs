@@ -92,6 +92,28 @@ public class GrowthStageCalculatorTests
         Assert.Equal(GrowthStage.FrutaLegendaria, calc.CalcularEtapa(habito));
     }
 
+    [Fact]
+    public void RelojAcelerado_ConAnclaGuardada_SigueDondeIbaTrasReiniciar()
+    {
+        var ancla = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        // La app se reabre 10 minutos reales después de activar el modo.
+        var relojBase = new RelojManual(ancla.AddMinutes(10));
+
+        var acelerado = RelojAcelerado.UnDiaCada(TimeSpan.FromMinutes(1), relojBase, ancla);
+
+        Assert.Equal(ancla.AddDays(10), acelerado.GetUtcNow());
+        Assert.Equal(ancla, acelerado.Ancla);
+    }
+
+    [Fact]
+    public void RelojAcelerado_AnclaEnElFuturo_Lanza()
+    {
+        var relojBase = new RelojManual(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            RelojAcelerado.UnDiaCada(TimeSpan.FromMinutes(1), relojBase, relojBase.Ahora.AddHours(1)));
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-2)]
