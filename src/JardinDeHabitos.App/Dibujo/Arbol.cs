@@ -48,7 +48,7 @@ public readonly record struct GeometriaArbol(float CentroX, float Suelo, float E
     /// <summary>Zona "viva" de la planta: la copa o, si aún no hay copa, el área alrededor del brote.</summary>
     public RectF Zona => Copa.Width > 0
         ? Copa
-        : new RectF(CentroX - Escala * 0.14f, Suelo - Escala * 0.22f, Escala * 0.28f, Escala * 0.22f);
+        : new RectF(CentroX - Escala * 0.26f, Suelo - Escala * 0.36f, Escala * 0.52f, Escala * 0.32f);
 }
 
 /// <summary>Árbol vectorial plano con degradados cálidos. Sin texturas ni pixel art.</summary>
@@ -57,12 +57,14 @@ public static class Arbol
     private static readonly Color CieloArriba = Color.FromArgb("#F4C76E");
     private static readonly Color CieloAbajo = Color.FromArgb("#6E7E3A");
     private static readonly Color CortezaClara = Color.FromArgb("#7A5536");
-    private static readonly Color Semilla = Color.FromArgb("#9A6A3F");
+    private static readonly Color Semilla = Color.FromArgb("#D9A066");
     private static readonly Color Flor = Color.FromArgb("#F6E4DC");
     private static readonly Color FrutaVerde = Color.FromArgb("#B8C85A");
     private static readonly Color Oro = Color.FromArgb("#F7CF4A");
     private static readonly Color Bicho = Color.FromArgb("#2E2233");
-    private static readonly Color RaizPodrida = Color.FromArgb("#5B5236");
+    private static readonly Color CopaEnfermaArriba = Color.FromArgb("#A9A452");
+    private static readonly Color CopaEnfermaAbajo = Color.FromArgb("#5E6A2C");
+    private static readonly Color RaizPodrida = Color.FromArgb("#9A8A5C");
 
     // Manchas de la copa: (x, y, radio) relativos al ancho de la copa.
     private static readonly (float X, float Y, float R)[] Manchas =
@@ -127,19 +129,22 @@ public static class Arbol
         switch (e.Etapa)
         {
             case GrowthStage.Semilla:
-                c.FillColor = Semilla;
-                c.FillEllipse(g.CentroX - s * 0.035f, g.Suelo - s * 0.035f, s * 0.07f, s * 0.05f);
+                // Semilla grande y clara, medio enterrada, con la punta del brote asomando.
+                c.Relleno(Semilla);
+                c.FillEllipse(g.CentroX - s * 0.06f, g.Suelo - s * 0.06f, s * 0.12f, s * 0.085f);
+                c.Relleno(Colors.White.WithAlpha(0.25f));
+                c.FillEllipse(g.CentroX - s * 0.035f, g.Suelo - s * 0.05f, s * 0.04f, s * 0.025f);
                 c.StrokeColor = Tema.Hoja;
-                c.StrokeSize = s * 0.008f;
+                c.StrokeSize = s * 0.014f;
                 c.StrokeLineCap = LineCap.Round;
-                c.DrawLine(g.CentroX, g.Suelo - s * 0.03f, g.CentroX + s * 0.01f, g.Suelo - s * 0.05f);
+                c.DrawLine(g.CentroX + s * 0.01f, g.Suelo - s * 0.055f, g.CentroX + s * 0.03f, g.Suelo - s * 0.10f);
                 break;
             case GrowthStage.Brote:
                 Tallo(c, g);
                 break;
             default:
                 Tronco(c, g);
-                Copa(c, g);
+                Copa(c, g, e.Plaga);
                 break;
         }
 
@@ -153,15 +158,15 @@ public static class Arbol
         c.SetFillPaint(Degradado(CieloArriba, CieloAbajo), r);
         c.FillRoundedRectangle(r, 24);
         // Sol bajo, plano.
-        c.FillColor = Color.FromArgb("#FBE3A0").WithAlpha(0.85f);
-        float sol = Math.Min(r.Width, r.Height) * 0.16f;
-        c.FillCircle(r.Right - sol * 1.6f, r.Top + sol * 1.5f, sol);
+        c.Relleno(Color.FromArgb("#FBE3A0").WithAlpha(0.85f));
+        float sol = Math.Min(r.Width, r.Height) * 0.08f;
+        c.FillCircle(r.Right - sol * 2.4f, r.Top + sol * 2.2f, sol);
     }
 
     private static void Paz(ICanvas c, GeometriaArbol g)
     {
         var z = g.Zona;
-        c.FillColor = Color.FromArgb("#F3EBD3").WithAlpha(0.18f);
+        c.Relleno(Tema.Miel.WithAlpha(0.10f));
         c.FillEllipse(z.X - z.Width * 0.25f, z.Y - z.Height * 0.25f, z.Width * 1.5f, z.Height * 1.5f);
     }
 
@@ -171,7 +176,7 @@ public static class Arbol
         var paint = new RadialGradientPaint(
             [new PaintGradientStop(0, Oro.WithAlpha(0.55f)), new PaintGradientStop(1, Oro.WithAlpha(0f))],
             new Point(0.5, 0.5), 0.5);
-        var area = new RectF(z.X - z.Width * 0.3f, z.Y - z.Height * 0.3f, z.Width * 1.6f, z.Height * 1.6f);
+        var area = new RectF(z.X - z.Width * 0.18f, z.Y - z.Height * 0.12f, z.Width * 1.36f, z.Height * 1.36f);
         c.SetFillPaint(paint, area);
         c.FillEllipse(area);
     }
@@ -184,7 +189,7 @@ public static class Arbol
         c.FillEllipse(m);
         if (regado)
         {
-            c.FillColor = Color.FromArgb("#3A2618").WithAlpha(0.7f);
+            c.Relleno(Color.FromArgb("#3A2618").WithAlpha(0.7f));
             c.FillEllipse(g.CentroX - s * 0.18f, g.Suelo - s * 0.02f, s * 0.36f, s * 0.07f);
         }
     }
@@ -200,7 +205,7 @@ public static class Arbol
             var p = new PathF(g.CentroX, g.Suelo);
             p.QuadTo(g.CentroX + s * dx * 0.4f, g.Suelo + s * dy, g.CentroX + s * dx, g.Suelo + s * dy * 0.8f);
             c.DrawPath(p);
-            c.FillColor = Color.FromArgb("#3E3826");
+            c.Relleno(Color.FromArgb("#6E6440"));
             c.FillCircle(g.CentroX + s * dx, g.Suelo + s * dy * 0.8f, s * 0.014f);
         }
     }
@@ -245,14 +250,14 @@ public static class Arbol
         c.FillPath(p);
     }
 
-    private static void Copa(ICanvas c, GeometriaArbol g)
+    private static void Copa(ICanvas c, GeometriaArbol g, bool enferma)
     {
         var z = g.Copa;
-        c.SetFillPaint(Degradado(Tema.Hoja, Tema.HojaOscura), z);
+        c.SetFillPaint(enferma ? Degradado(CopaEnfermaArriba, CopaEnfermaAbajo) : Degradado(Tema.Hoja, Tema.HojaOscura), z);
         foreach (var (x, y, r) in Manchas)
             c.FillCircle(z.X + z.Width * x, z.Y + z.Height * y, z.Width * r);
         // Brillo plano arriba a la izquierda.
-        c.FillColor = Colors.White.WithAlpha(0.10f);
+        c.Relleno(Colors.White.WithAlpha(0.10f));
         c.FillCircle(z.X + z.Width * 0.38f, z.Y + z.Height * 0.30f, z.Width * 0.16f);
     }
 
@@ -268,13 +273,13 @@ public static class Arbol
                 foreach (var p in Adornos.Take(6))
                 {
                     var (x, y) = (z.X + z.Width * p.X, z.Y + z.Height * p.Y);
-                    c.FillColor = Flor;
+                    c.Relleno(Flor);
                     for (int i = 0; i < 5; i++)
                     {
                         float a = i * MathF.Tau / 5;
                         c.FillCircle(x + MathF.Cos(a) * r * 0.8f, y + MathF.Sin(a) * r * 0.8f, r * 0.6f);
                     }
-                    c.FillColor = Tema.Miel;
+                    c.Relleno(Tema.Miel);
                     c.FillCircle(x, y, r * 0.45f);
                 }
                 break;
@@ -286,7 +291,7 @@ public static class Arbol
                 break;
             case GrowthStage.FrutaLegendaria:
                 Frutas(c, z, Oro, r * 1.35f, 8);
-                c.FillColor = Colors.White.WithAlpha(0.9f);
+                c.Relleno(Colors.White.WithAlpha(0.9f));
                 foreach (var p in new[] { new PointF(0.1f, 0.1f), new PointF(0.95f, 0.2f), new PointF(0.05f, 0.85f) })
                     Destello(c, z.X + z.Width * p.X, z.Y + z.Height * p.Y, r * 1.2f);
                 break;
@@ -298,9 +303,9 @@ public static class Arbol
         foreach (var p in Adornos.Take(cuantas))
         {
             var (x, y) = (z.X + z.Width * p.X, z.Y + z.Height * p.Y);
-            c.FillColor = color;
+            c.Relleno(color);
             c.FillCircle(x, y, r);
-            c.FillColor = Colors.White.WithAlpha(0.35f);
+            c.Relleno(Colors.White.WithAlpha(0.35f));
             c.FillCircle(x - r * 0.35f, y - r * 0.35f, r * 0.3f);
         }
     }
@@ -350,19 +355,13 @@ public static class Arbol
     private static void Plaga(ICanvas c, GeometriaArbol g)
     {
         var z = g.Zona;
-        if (g.Copa.Width > 0)
-        {
-            c.FillColor = Color.FromArgb("#3B2A3F").WithAlpha(0.22f);
-            foreach (var (x, y, r) in Manchas)
-                c.FillCircle(z.X + z.Width * x, z.Y + z.Height * y, z.Width * r);
-        }
         foreach (var p in PosicionesPlaga)
             DibujarBicho(c, new PointF(z.X + z.Width * p.X, z.Y + z.Height * p.Y), g.Escala * 0.022f);
     }
 
     public static void DibujarBicho(ICanvas c, PointF p, float r)
     {
-        c.FillColor = Bicho;
+        c.Relleno(Bicho);
         c.FillEllipse(p.X - r, p.Y - r * 0.75f, r * 2, r * 1.5f);
         c.StrokeColor = Bicho;
         c.StrokeSize = Math.Max(1, r * 0.22f);
@@ -371,7 +370,7 @@ public static class Arbol
             c.DrawLine(p.X - r * 0.6f, p.Y + i * r * 0.4f, p.X - r * 1.5f, p.Y + i * r * 0.7f);
             c.DrawLine(p.X + r * 0.6f, p.Y + i * r * 0.4f, p.X + r * 1.5f, p.Y + i * r * 0.7f);
         }
-        c.FillColor = Color.FromArgb("#9C6FA8");
+        c.Relleno(Color.FromArgb("#9C6FA8"));
         c.FillCircle(p.X, p.Y - r * 0.2f, r * 0.3f);
     }
 

@@ -54,7 +54,7 @@ public sealed class Escena : IDrawable
     {
         MiniJuego.Plaga => $"Quedan {_bichos.Count} bichos.",
         MiniJuego.Raices => $"Quedan {_raices.Count} raíces podridas.",
-        MiniJuego.Podar => $"Quedan {_ramas.Count} ramas sueltas.",
+        MiniJuego.Podar => $"Quedan {_ramas.Count} por cortar.",
         MiniJuego.Regar => $"{Math.Min(100, (int)(_riego / SegundosDeRiego * 100))}% regado.",
         _ => "",
     };
@@ -104,7 +104,7 @@ public sealed class Escena : IDrawable
                     canvas.StrokeColor = Color.FromArgb("#5B5236");
                     canvas.StrokeSize = g.Escala * 0.02f;
                     canvas.DrawLine(r.Pos.X, r.Pos.Y - g.Escala * 0.05f, r.Pos.X, r.Pos.Y + g.Escala * 0.03f);
-                    canvas.FillColor = Color.FromArgb("#3E3826");
+                    canvas.Relleno(Color.FromArgb("#3E3826"));
                     canvas.FillCircle(r.Pos.X, r.Pos.Y + g.Escala * 0.03f, g.Escala * 0.025f);
                 }
                 break;
@@ -115,7 +115,7 @@ public sealed class Escena : IDrawable
                 foreach (var (a, b) in _ramas)
                 {
                     canvas.DrawLine(a, b);
-                    canvas.FillColor = Tema.HojaOscura;
+                    canvas.Relleno(Tema.HojaOscura);
                     canvas.FillCircle(b, g.Escala * 0.018f);
                 }
                 canvas.StrokeColor = Tema.Hueso.WithAlpha(0.6f);
@@ -123,7 +123,7 @@ public sealed class Escena : IDrawable
                 foreach (var (a, b) in _cortes.TakeLast(12)) canvas.DrawLine(a, b);
                 break;
             case MiniJuego.Regar:
-                canvas.FillColor = Color.FromArgb("#9CC9D9");
+                canvas.Relleno(Color.FromArgb("#9CC9D9"));
                 foreach (var gota in _gotas) canvas.FillEllipse(gota.Pos.X - 3, gota.Pos.Y - 5, 6, 10);
                 DibujarRegadera(canvas, _regadera, g.Escala);
                 break;
@@ -282,7 +282,7 @@ public sealed class Escena : IDrawable
     private static void DibujarRegadera(ICanvas c, PointF p, float s)
     {
         float w = s * 0.14f, h = s * 0.10f;
-        c.FillColor = Color.FromArgb("#5F8FA0");
+        c.Relleno(Color.FromArgb("#5F8FA0"));
         c.FillRoundedRectangle(p.X - w / 2, p.Y - h / 2, w, h, s * 0.02f);
         c.StrokeColor = Color.FromArgb("#5F8FA0");
         c.StrokeSize = s * 0.018f;
@@ -290,7 +290,7 @@ public sealed class Escena : IDrawable
         c.DrawLine(p.X + w * 0.4f, p.Y, PicoRegadera(p, s).X, PicoRegadera(p, s).Y);
         c.StrokeSize = s * 0.012f;
         c.DrawArc(p.X - w * 0.35f, p.Y - h * 1.0f, w * 0.7f, h * 0.9f, 0, 180, false, false);
-        c.FillColor = Colors.White.WithAlpha(0.25f);
+        c.Relleno(Colors.White.WithAlpha(0.25f));
         c.FillRoundedRectangle(p.X - w * 0.4f, p.Y - h * 0.4f, w * 0.25f, h * 0.6f, s * 0.01f);
     }
 

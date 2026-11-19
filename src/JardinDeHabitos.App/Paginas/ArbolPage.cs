@@ -9,6 +9,7 @@ public sealed class ArbolPage : ContentPage
     private readonly Guid _id;
     private readonly Escena _escena = new();
     private readonly GraphicsView _lienzo;
+    private readonly ScrollView _scroll;
     private IDispatcherTimer? _timer;
     private VistaArbol _vista = null!;
 
@@ -27,7 +28,7 @@ public sealed class ArbolPage : ContentPage
         _id = id;
         BackgroundColor = Tema.Musgo;
 
-        _lienzo = new GraphicsView { Drawable = _escena, HeightRequest = 360 };
+        _lienzo = new GraphicsView { Drawable = _escena, HeightRequest = 320 };
         _lienzo.StartInteraction += (_, e) => { _escena.Tocar(e.Touches[0]); Repintar(); };
         _lienzo.DragInteraction += (_, e) => { _escena.Arrastrar(e.Touches[0]); Repintar(); };
         _lienzo.EndInteraction += (_, _) => { _escena.Soltar(); Repintar(); };
@@ -38,7 +39,9 @@ public sealed class ArbolPage : ContentPage
         var quitar = Tema.Boton("Quitar este árbol del jardín", Colors.Transparent, Tema.HuesoTenue);
         quitar.Clicked += Quitar;
 
-        Content = new ScrollView
+        // El lienzo va fuera del ScrollView: así el desplazamiento no le roba los arrastres.
+        _lienzo.Margin = new Thickness(18, 12, 18, 0);
+        _scroll = new ScrollView
         {
             Content = new VerticalStackLayout
             {
@@ -46,7 +49,6 @@ public sealed class ArbolPage : ContentPage
                 Spacing = 14,
                 Children =
                 {
-                    _lienzo,
                     _ayuda,
                     _cancelar,
                     new VerticalStackLayout { Spacing = 2, Children = { _titulo, _etapa, _detalle } },
@@ -57,6 +59,10 @@ public sealed class ArbolPage : ContentPage
                 },
             },
         };
+        var raiz = new Grid { RowDefinitions = [new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star)] };
+        raiz.Add(_lienzo, 0, 0);
+        raiz.Add(_scroll, 0, 1);
+        Content = raiz;
     }
 
     protected override void OnAppearing()
@@ -67,7 +73,7 @@ public sealed class ArbolPage : ContentPage
         _timer.Interval = TimeSpan.FromMilliseconds(33);
         _timer.Tick += (_, _) =>
         {
-            if (_escena.Tick(0.033f)) Repintar();
+            if (_escena.Tick(0.033f) || _escena.Juego != MiniJuego.Ninguno) Repintar();
         };
         _timer.Start();
     }
@@ -88,7 +94,7 @@ public sealed class ArbolPage : ContentPage
     {
         _vista = Servicios.Jardin.Arbol(_id);
         var v = _vista;
-        Title = v.Nombre;
+        Title = "";
         _escena.Arbol = EstadoArbol.De(v);
 
         bool jugando = _escena.Juego != MiniJuego.Ninguno;
@@ -316,7 +322,7 @@ public sealed class ArbolPage : ContentPage
         MiniJuego.Plaga => "Toca cada bicho para quitarlo.",
         MiniJuego.Raices => "Arrastra las raíces podridas fuera de la tierra.",
         MiniJuego.Regar => "Arrastra la regadera sobre el árbol.",
-        MiniJuego.Podar => "Desliza el dedo sobre las ramas sueltas para cortarlas.",
+        MiniJuego.Podar => "Desliza el dedo sobre las ramas sueltas y hierbas para cortarlas.",
         _ => "",
     };
 

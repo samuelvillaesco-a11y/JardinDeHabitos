@@ -38,10 +38,22 @@ public sealed class JardinPage : ContentPage
                     _aviso,
                     _cuadricula,
                     logros,
+#if DEBUG
+                    BotonGaleria(),
+#endif
                 },
             },
         };
     }
+
+#if DEBUG
+    private Button BotonGaleria()
+    {
+        var b = Tema.Boton("Galería de etapas (debug)", Colors.Transparent, Tema.HuesoTenue);
+        b.Clicked += async (_, _) => await Navigation.PushAsync(new GaleriaPage());
+        return b;
+    }
+#endif
 
     protected override async void OnAppearing()
     {
@@ -84,7 +96,7 @@ public sealed class JardinPage : ContentPage
 
     private View ParcelaArbol(VistaArbol v)
     {
-        var dibujo = new GraphicsView { Drawable = new ArbolPequeno(EstadoArbol.De(v)), HeightRequest = 130 };
+        var dibujo = new GraphicsView { Drawable = new ArbolPequeno(EstadoArbol.De(v)), HeightRequest = 130, InputTransparent = true };
         var estado = v switch
         {
             { EsCheatDayHoy: true } => "Día libre",
