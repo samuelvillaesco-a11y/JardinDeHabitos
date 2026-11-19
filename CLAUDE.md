@@ -65,7 +65,7 @@ Hecho (todo commiteado, 79/79 tests Core verdes):
 - APK Release firmado: `src/JardinDeHabitos.App/bin/Release/net10.0-android/publish/org.jardindehabitos.app-Signed.apk`. NO instalado en el teléfono (teléfono): falta permiso del usuario.
 
 Pendiente (en este orden):
-1. Probar en emulador los arreglos de la revisión final: refrescar al volver del fondo (`IRefrescable`, `App.OnResume`) y handlers con `Intentar(...)` en `ArbolPage`. Compilan, sin probar a mano.
+1. ~~Probar en emulador refresco al volver y `Intentar(...)`~~ (hecho 2026-11-18: jardín y árbol se releen al cambiar de día en segundo plano; doble toque en check-in no cierra la app).
 2. Menores diferidos de la revisión: doble toque crea duplicados; LeyendaCaida sin transacción SQLite; receptor de aviso sin try/catch; aviso no se reprograma tras reinicio; sin versión de esquema SQLite; diálogo de muerte dice "hoy mismo" (es mañana); timer 30 Hz siempre activo; sin modo acelerado en la app.
 3. Merge de `fase1/app` a `main` y decidir si se instala el APK en el teléfono.
 
