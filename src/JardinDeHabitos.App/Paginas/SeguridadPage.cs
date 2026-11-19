@@ -125,7 +125,8 @@ public sealed class SeguridadPage : ContentPage
                 return;
             }
             Seguridad.Cambiar(seguro, nuevo);
-            sw.IsToggled = nuevo;
+            // Al cerrarse la verificación la página ya se repintó con el estado viejo: se repinta de nuevo.
+            await Pintar();
         }
         finally { _ocupado = false; }
     }

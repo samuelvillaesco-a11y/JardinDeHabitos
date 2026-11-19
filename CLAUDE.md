@@ -97,3 +97,10 @@ Probado también en modo acelerado: 8 días sin visita → "¡Necesita ayuda!" +
 OJO: en el emulador la app PhoneBox (net.oxog.phonebox.deskpanel) puede pasar al frente y recibir los toques; el teléfono puede estar conectado por USB: usar siempre `adb -s emulator-5554`.
 
 Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 2026-11-19 con `adb install -r` del APK Release firmado (datos conservados, abre sin cierres).
+
+## Seguridad local (2026-11-19)
+- Sin correo, sin cuentas de terceros, sin internet: enviar códigos por correo exigía credenciales dentro del APK o un servidor, y un mailto no autentica. Decisión del usuario: quitar el correo por completo.
+- Clave de la app opcional (PBKDF2-SHA256, 600 000 iteraciones, sal de 16 bytes, en SecureStorage), código de recuperación de un solo uso, espera creciente tras 5 intentos fallidos.
+- Seguros: logros (ON), blog botánico (ON), general (OFF), doble verificación (OFF). Cada cambio y la entrada al panel piden verificación.
+- Release solo pide POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED y USE_BIOMETRIC (Debug agrega INTERNET por el depurador). Copias de seguridad desactivadas.
+- Pantallas con FLAG_SECURE salen negras en capturas: para probar en el emulador leer la UI con `uiautomator dump`. Instalación limpia en el emulador: `-p:EmbedAssembliesIntoApk=true`.
