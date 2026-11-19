@@ -5,51 +5,78 @@ namespace JardinDeHabitos.App.Paginas;
 
 /// <summary>
 /// El estante de trofeos (se abre con el bloqueo del teléfono). Solo emblemas: lo que significa cada uno
-/// se ve al tocarlo. Los nuevos llevan un punto rojo y van primero. Mini-juegos, malditos y legendarios
-/// no existen aquí (ni en los filtros) hasta que se gana al menos uno.
+/// se ve al tocarlo. Un estante por categoría (tu jardín, uno por árbol, y mini-juegos/malditos/legendarios
+/// solo si ya hay alguno ganado), con los emblemas en orden alfabético. Los filtros viven en una hoja que
+/// sube desde abajo solo cuando el usuario la pide.
 /// </summary>
 public sealed class LogrosPage : ContentPage
 {
-    private enum Categoria { Todas, Principales, Especificos, MiniJuegos }
-    private enum Orden { NuevosPrimero, Recientes, Antiguos }
+    private enum Orden { Categoria, NuevosPrimero, Recientes, Antiguos }
 
+    private const string Todas = "todas";
+    private const string Principales = "principales";
+    private const string MiniJuegos = "minijuegos";
+    private const string Malditos = "malditos";
+    private const string Legendarios = "legendarios";
+    private const string PrefijoHabito = "hab:";
     private const string TodoRango = "todos";
+
     private static readonly Color Madera = Color.FromArgb("#6B4A2E");
     private static readonly Color MaderaOscura = Color.FromArgb("#4A3322");
+    private static readonly StringComparer Alfabetico = StringComparer.Create(Tema.Cultura, ignoreCase: true);
 
     private IReadOnlyList<EntradaEstante> _estante = [];
     private readonly VerticalStackLayout _lista = new() { Padding = new Thickness(18, 8, 18, 28), Spacing = 6 };
-    private readonly VerticalStackLayout _filtros = new() { Spacing = 6, IsVisible = false };
-    private readonly Button _botonFiltros = Tema.Boton("Filtrar y ordenar ▾", Tema.MusgoClaro, Tema.Hueso);
+    private readonly Button _botonFiltros = Tema.Boton("⚙ Filtrar", Tema.MusgoClaro, Tema.Hueso);
+    private readonly Label _resumenFiltro = Tema.Texto("", 14, color: Tema.HuesoTenue);
+
+    // Hoja de filtros (se desliza desde abajo).
+    private readonly Grid _hojaFiltros = new() { IsVisible = false };
+    private readonly Border _panelFiltros;
+    private readonly VerticalStackLayout _filtros = new() { Spacing = 8 };
+
+    // Detalle de un emblema.
     private readonly Grid _detalle = new() { IsVisible = false };
     private readonly Border _panel;
     private readonly VerticalStackLayout _panelContenido = new() { Spacing = 6 };
 
-    private Chips<Categoria> _categoria = null!;
-    private Chips<string> _rango = null!;
-    private Chips<Orden> _orden = null!;
+    private string _categoria = Todas;
+    private string _rango = TodoRango;
+    private Orden _orden = Orden.Categoria;
 
     public LogrosPage()
     {
         Title = "Tu estante";
         BackgroundColor = Tema.Musgo;
 
-        var fondo = new BoxView { Color = Colors.Black.WithAlpha(0.55f) };
-        var cerrarFondo = new TapGestureRecognizer();
-        cerrarFondo.Tapped += (_, _) => CerrarDetalle();
-        fondo.GestureRecognizers.Add(cerrarFondo);
-        _panel = new Border
-        {
-            Content = new ScrollView { Content = _panelContenido },
-            Background = Tema.MusgoClaro,
-            StrokeThickness = 0,
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = new CornerRadius(24, 24, 0, 0) },
-            Padding = new Thickness(22, 18, 22, 28),
-            VerticalOptions = LayoutOptions.End,
-            MaximumHeightRequest = 620,
-        };
-        _detalle.Add(fondo);
+        _panel = Hoja(_panelContenido, 620);
+        _detalle.Add(Fondo(CerrarDetalle));
         _detalle.Add(_panel);
+
+        _panelFiltros = Hoja(_filtros, 640);
+        // Fondo musgo oscuro: así se ve el borde de los chips sin elegir.
+        _panelFiltros.Background = Tema.Musgo;
+        _panelFiltros.Stroke = Tema.MusgoClaro;
+        _panelFiltros.StrokeThickness = 2;
+        var deslizar = new SwipeGestureRecognizer { Direction = SwipeDirection.Down };
+        deslizar.Swiped += async (_, _) => await CerrarFiltros();
+        _panelFiltros.GestureRecognizers.Add(deslizar);
+        _hojaFiltros.Add(Fondo(async () => await CerrarFiltros()));
+        _hojaFiltros.Add(_panelFiltros);
+
+        _botonFiltros.HorizontalOptions = LayoutOptions.Start;
+        _botonFiltros.Clicked += async (_, _) => await AbrirFiltros();
+        SemanticProperties.SetDescription(_botonFiltros, "Abrir filtros del estante");
+
+        var barra = new Grid
+        {
+            ColumnDefinitions = [new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star)],
+            ColumnSpacing = 12,
+            Padding = new Thickness(18, 12, 18, 4),
+        };
+        barra.Add(_botonFiltros, 0);
+        _resumenFiltro.VerticalOptions = LayoutOptions.Center;
+        barra.Add(_resumenFiltro, 1);
 
         var contenido = new ScrollView
         {
@@ -67,97 +94,168 @@ public sealed class LogrosPage : ContentPage
                             Tema.Texto("Toca un emblema para ver qué significa.", 15, color: Tema.HuesoTenue),
                         },
                     },
-                    new VerticalStackLayout
-                    {
-                        Padding = new Thickness(18, 12, 18, 4),
-                        Spacing = 8,
-                        Children = { _botonFiltros, _filtros },
-                    },
+                    barra,
                     _lista,
                 },
             },
         };
 
-        _botonFiltros.HorizontalOptions = LayoutOptions.Start;
-        _botonFiltros.Clicked += (_, _) =>
-        {
-            _filtros.IsVisible = !_filtros.IsVisible;
-            _botonFiltros.Text = _filtros.IsVisible ? "Filtrar y ordenar ▴" : "Filtrar y ordenar ▾";
-        };
-
         var raiz = new Grid();
         raiz.Add(contenido);
+        raiz.Add(_hojaFiltros);
         raiz.Add(_detalle);
         Content = raiz;
 
         Cargar();
     }
 
+    private static Border Hoja(View contenido, double alto) => new()
+    {
+        Content = new ScrollView { Content = contenido },
+        Background = Tema.MusgoClaro,
+        StrokeThickness = 0,
+        StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = new CornerRadius(24, 24, 0, 0) },
+        Padding = new Thickness(22, 14, 22, 28),
+        VerticalOptions = LayoutOptions.End,
+        MaximumHeightRequest = alto,
+    };
+
+    private static BoxView Fondo(Action alTocar)
+    {
+        var fondo = new BoxView { Color = Colors.Black.WithAlpha(0.55f) };
+        var toque = new TapGestureRecognizer();
+        toque.Tapped += (_, _) => alTocar();
+        fondo.GestureRecognizers.Add(toque);
+        return fondo;
+    }
+
     private void Cargar()
     {
         _estante = Servicios.Jardin.Estante();
-        ArmarFiltros();
         Pintar();
+    }
+
+    // ---------- Categorías ----------
+
+    /// <summary>
+    /// Las categorías que existen hoy, en orden estándar: tu jardín, un estante por árbol (alfabético),
+    /// y mini-juegos, malditos y legendarios solo si ya hay al menos uno ganado.
+    /// </summary>
+    private List<(string Clave, string Nombre)> Categorias()
+    {
+        var lista = new List<(string, string)>();
+        if (_estante.Any(e => e.Def.Categoria == CategoriaLogro.General)) lista.Add((Principales, "Tu jardín"));
+
+        var arboles = _estante.Where(e => e.Def.Categoria == CategoriaLogro.Habito)
+            .GroupBy(e => e.Def.Habito!.Value)
+            .Select(g => (Clave: PrefijoHabito + g.Key, Nombre: NombreArbol(g.Select(e => e.Arbol).FirstOrDefault(a => a is not null))))
+            .OrderBy(a => a.Nombre, Alfabetico);
+        lista.AddRange(arboles);
+
+        if (_estante.Any(e => e.Def.Categoria == CategoriaLogro.Oculto)) lista.Add((MiniJuegos, "Mini-juegos"));
+        if (_estante.Any(e => e.Def.Categoria == CategoriaLogro.Maldito)) lista.Add((Malditos, "Malditos"));
+        if (_estante.Any(e => e.Def.Categoria == CategoriaLogro.Legendario)) lista.Add((Legendarios, "Legendarios"));
+        return lista;
+    }
+
+    /// <summary>El estante se nombra por el árbol, nunca por el hábito (eso solo se ve al tocar un emblema).</summary>
+    private static string NombreArbol(string? arbol) =>
+        arbol is null ? "Árbol que ya no está" : $"Estante del {arbol.ToLower(Tema.Cultura)}";
+
+    private static string ClaveDe(EntradaEstante e) => e.Def.Categoria switch
+    {
+        CategoriaLogro.General => Principales,
+        CategoriaLogro.Habito => PrefijoHabito + e.Def.Habito!.Value,
+        CategoriaLogro.Oculto => MiniJuegos,
+        CategoriaLogro.Maldito => Malditos,
+        _ => Legendarios,
+    };
+
+    // ---------- Hoja de filtros ----------
+
+    private async Task AbrirFiltros()
+    {
+        ArmarFiltros();
+        _hojaFiltros.IsVisible = true;
+        _panelFiltros.TranslationY = 700;
+        await _panelFiltros.TranslateToAsync(0, 0, 220, Easing.CubicOut);
+    }
+
+    private async Task CerrarFiltros()
+    {
+        if (!_hojaFiltros.IsVisible) return;
+        await _panelFiltros.TranslateToAsync(0, 700, 180, Easing.CubicIn);
+        _hojaFiltros.IsVisible = false;
     }
 
     /// <summary>Las opciones de mini-juegos, malditos y legendarios aparecen solo si ya hay alguno ganado.</summary>
     private void ArmarFiltros()
     {
-        var cat = _categoria?.Elegido ?? Categoria.Todas;
-        var ran = _rango?.Elegido ?? TodoRango;
-        var ord = _orden?.Elegido ?? Orden.NuevosPrimero;
-
-        bool hayOcultos = _estante.Any(e => e.Def.Categoria == CategoriaLogro.Oculto);
-        bool hayMalditos = _estante.Any(e => e.Rango == Rango.Maldito);
-        bool hayLegendarios = _estante.Any(e => e.Rango == Rango.Legendario);
-
-        var categorias = new List<(Categoria, string)>
-        {
-            (Categoria.Todas, "Todos"), (Categoria.Principales, "Principales"), (Categoria.Especificos, "Específicos"),
-        };
-        if (hayOcultos) categorias.Add((Categoria.MiniJuegos, "Mini-juegos"));
+        var categorias = new List<(string, string)> { (Todas, "Todas") };
+        categorias.AddRange(Categorias().Select(c => (c.Clave, c.Clave.StartsWith(PrefijoHabito) ? c.Nombre.Replace("Estante del ", "").ToUpperFirst() : c.Nombre)));
+        if (!categorias.Any(c => c.Item1 == _categoria)) _categoria = Todas;
 
         var rangos = new List<(string, string)>
         {
             (TodoRango, "Todos"), (nameof(Rango.Bronce), "★ Bronce"), (nameof(Rango.Plata), "★★ Plata"),
             (nameof(Rango.Oro), "★★★ Oro"), (nameof(Rango.SinGanar), "Por ganar"),
         };
-        if (hayMalditos) rangos.Add((nameof(Rango.Maldito), "Malditos"));
-        if (hayLegendarios) rangos.Add((nameof(Rango.Legendario), "Legendarios"));
+        if (_estante.Any(e => e.Rango == Rango.Maldito)) rangos.Add((nameof(Rango.Maldito), "Malditos"));
+        if (_estante.Any(e => e.Rango == Rango.Legendario)) rangos.Add((nameof(Rango.Legendario), "Legendarios"));
+        if (!rangos.Any(r => r.Item1 == _rango)) _rango = TodoRango;
 
-        if (!categorias.Any(c => c.Item1 == cat)) cat = Categoria.Todas;
-        if (!rangos.Any(r => r.Item1 == ran)) ran = TodoRango;
+        var cat = new Chips<string>(categorias, iniciales: [_categoria]);
+        var ran = new Chips<string>(rangos, iniciales: [_rango]);
+        var ord = new Chips<Orden>(
+            [(Orden.Categoria, "Por categoría (A-Z)"), (Orden.NuevosPrimero, "Nuevos primero"), (Orden.Recientes, "Más recientes"), (Orden.Antiguos, "Más antiguos")],
+            iniciales: [_orden]);
+        cat.Cambio += () => { _categoria = cat.Elegido ?? Todas; Pintar(); };
+        ran.Cambio += () => { _rango = ran.Elegido ?? TodoRango; Pintar(); };
+        ord.Cambio += () => { _orden = ord.Elegido; Pintar(); };
 
-        _categoria = new Chips<Categoria>(categorias, iniciales: [cat]);
-        _rango = new Chips<string>(rangos, iniciales: [ran]);
-        _orden = new Chips<Orden>([(Orden.NuevosPrimero, "Nuevos primero"), (Orden.Recientes, "Más recientes"), (Orden.Antiguos, "Más antiguos")], iniciales: [ord]);
-        _categoria.Cambio += Pintar;
-        _rango.Cambio += Pintar;
-        _orden.Cambio += Pintar;
+        var limpiar = Tema.Boton("Quitar filtros", Colors.Transparent, Tema.HuesoTenue);
+        limpiar.Clicked += async (_, _) =>
+        {
+            _categoria = Todas;
+            _rango = TodoRango;
+            _orden = Orden.Categoria;
+            Pintar();
+            await CerrarFiltros();
+        };
+        var listo = Tema.Boton("Listo", Tema.Hoja);
+        listo.Clicked += async (_, _) => await CerrarFiltros();
 
         _filtros.Clear();
+        _filtros.Add(new BoxView { Color = Tema.HuesoTenue, HeightRequest = 4, WidthRequest = 44, CornerRadius = 2, HorizontalOptions = LayoutOptions.Center, Margin = new Thickness(0, 0, 0, 6) });
+        _filtros.Add(Tema.Texto("Filtrar el estante", 20, Tema.FuenteTitulo));
         _filtros.Add(Tema.Texto("Categoría", 14, Tema.FuenteNegrita, Tema.HuesoTenue));
-        _filtros.Add(_categoria);
+        _filtros.Add(cat);
         _filtros.Add(Tema.Texto("Rango", 14, Tema.FuenteNegrita, Tema.HuesoTenue));
-        _filtros.Add(_rango);
+        _filtros.Add(ran);
         _filtros.Add(Tema.Texto("Orden", 14, Tema.FuenteNegrita, Tema.HuesoTenue));
-        _filtros.Add(_orden);
+        _filtros.Add(ord);
+        var botones = new Grid
+        {
+            ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)],
+            ColumnSpacing = 10,
+            Margin = new Thickness(0, 8, 0, 0),
+        };
+        botones.Add(limpiar, 0);
+        botones.Add(listo, 1);
+        _filtros.Add(botones);
     }
+
+    // ---------- Estantes ----------
 
     private void Pintar()
     {
-        var cat = _categoria.Elegido;
-        Rango? ran = _rango.Elegido is { } r && r != TodoRango ? Enum.Parse<Rango>(r) : null;
-        var ord = _orden.Elegido;
+        Rango? ran = _rango != TodoRango ? Enum.Parse<Rango>(_rango) : null;
+        var visibles = _estante
+            .Where(e => _categoria == Todas || ClaveDe(e) == _categoria)
+            .Where(e => ran is null || e.Rango == ran)
+            .ToList();
 
-        var visibles = _estante.Where(e => cat switch
-        {
-            Categoria.Principales => e.Def.Categoria == CategoriaLogro.General,
-            Categoria.Especificos => e.Def.Categoria == CategoriaLogro.Habito,
-            Categoria.MiniJuegos => e.Def.Categoria == CategoriaLogro.Oculto,
-            _ => true,
-        }).Where(e => ran is null || e.Rango == ran).ToList();
-
+        ActualizarResumen();
         _lista.Clear();
         if (visibles.Count == 0)
         {
@@ -165,37 +263,45 @@ public sealed class LogrosPage : ContentPage
             return;
         }
 
-        if (ord != Orden.NuevosPrimero)
+        if (_orden is Orden.Recientes or Orden.Antiguos)
         {
-            // Por fecha de adquisición: un solo estante; lo que aún no se gana va al final.
+            // Por fecha de adquisición: un solo estante; lo que aún no se gana va al final, en orden alfabético.
             var ganados = visibles.Where(e => e.Fecha is not null);
-            ganados = ord == Orden.Recientes ? ganados.OrderByDescending(e => e.Fecha) : ganados.OrderBy(e => e.Fecha);
-            Estante("Por fecha", [.. ganados, .. visibles.Where(e => e.Fecha is null)]);
+            ganados = _orden == Orden.Recientes
+                ? ganados.OrderByDescending(e => e.Fecha).ThenBy(e => e.Def.Titulo, Alfabetico)
+                : ganados.OrderBy(e => e.Fecha).ThenBy(e => e.Def.Titulo, Alfabetico);
+            Estante("Por fecha", [.. ganados, .. Alfabeticos(visibles.Where(e => e.Fecha is null))]);
             return;
         }
 
-        var nuevos = visibles.Where(e => e.Nuevo).ToList();
-        if (nuevos.Count > 0) Estante("Recién conseguidos", nuevos);
-        var resto = visibles.Where(e => !e.Nuevo).ToList();
-
-        Estante("Legendarios", resto.Where(e => e.Rango == Rango.Legendario));
-        Estante("Malditos", resto.Where(e => e.Rango == Rango.Maldito));
-        Estante("Mini-juegos", Ordenar(resto.Where(e => e.Def.Categoria == CategoriaLogro.Oculto)));
-        Estante("Tu jardín", Ordenar(resto.Where(e => e.Def.Categoria == CategoriaLogro.General)));
-        foreach (var grupo in resto.Where(e => e.Def.Categoria == CategoriaLogro.Habito).GroupBy(e => e.Def.Habito!.Value))
+        var resto = visibles;
+        if (_orden == Orden.NuevosPrimero)
         {
-            // El estante se nombra por el árbol, no por el hábito: el hábito solo se ve al tocar un emblema.
-            var arbol = grupo.Select(e => e.Arbol).FirstOrDefault(a => a is not null);
-            Estante(arbol is null ? "Un árbol que ya no está" : $"Estante del {arbol.ToLower(Tema.Cultura)}", Ordenar(grupo));
+            var nuevos = visibles.Where(e => e.Nuevo).ToList();
+            Estante("Recién conseguidos", Alfabeticos(nuevos));
+            resto = [.. visibles.Where(e => !e.Nuevo)];
         }
+
+        // Orden estándar: una sección por categoría, emblemas en orden alfabético.
+        foreach (var (clave, nombre) in Categorias())
+            Estante(nombre, Alfabeticos(resto.Where(e => ClaveDe(e) == clave)));
     }
 
-    /// <summary>Ganados primero (del mejor metal al menor); luego lo más cercano a su siguiente estrella.</summary>
-    private static IEnumerable<EntradaEstante> Ordenar(IEnumerable<EntradaEstante> entradas) =>
-        entradas.OrderByDescending(e => e.Nivel > 0).ThenByDescending(e => e.Rango).ThenByDescending(Avance);
+    private void ActualizarResumen()
+    {
+        var partes = new List<string>();
+        if (_categoria != Todas)
+            partes.Add(Categorias().FirstOrDefault(c => c.Clave == _categoria).Nombre ?? "");
+        if (_rango != TodoRango) partes.Add(Nombre(Enum.Parse<Rango>(_rango)));
+        if (_orden != Orden.Categoria)
+            partes.Add(_orden switch { Orden.NuevosPrimero => "Nuevos primero", Orden.Recientes => "Más recientes", _ => "Más antiguos" });
 
-    private static double Avance(EntradaEstante e) =>
-        e.Nivel >= e.Def.Niveles.Length ? 1 : Math.Min(1, e.Progreso / (double)e.Def.Niveles[e.Nivel]);
+        _botonFiltros.Text = partes.Count == 0 ? "⚙ Filtrar" : $"⚙ Filtrar · {partes.Count}";
+        _resumenFiltro.Text = string.Join(" · ", partes);
+    }
+
+    private static IEnumerable<EntradaEstante> Alfabeticos(IEnumerable<EntradaEstante> entradas) =>
+        entradas.OrderBy(e => e.Def.Titulo, Alfabetico);
 
     private void Estante(string titulo, IEnumerable<EntradaEstante> entradas)
     {
@@ -288,9 +394,17 @@ public sealed class LogrosPage : ContentPage
 
     protected override bool OnBackButtonPressed()
     {
-        if (!_detalle.IsVisible) return base.OnBackButtonPressed();
-        CerrarDetalle();
-        return true;
+        if (_detalle.IsVisible)
+        {
+            CerrarDetalle();
+            return true;
+        }
+        if (_hojaFiltros.IsVisible)
+        {
+            _ = CerrarFiltros();
+            return true;
+        }
+        return base.OnBackButtonPressed();
     }
 
     private static string Nombre(Rango r) => r switch
@@ -310,4 +424,10 @@ public sealed class LogrosPage : ContentPage
         Debuff.MasRamas => "crecen más ramas sueltas al podar.",
         _ => "las raíces podridas son más tercas.",
     };
+}
+
+internal static class TextoExtensiones
+{
+    public static string ToUpperFirst(this string s) =>
+        string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0], Tema.Cultura) + s[1..];
 }
