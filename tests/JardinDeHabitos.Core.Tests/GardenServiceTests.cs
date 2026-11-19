@@ -195,7 +195,53 @@ public class GardenServiceTests
 
         _reloj.AvanzarDias(2); // sábado
         _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Friday, DayOfWeek.Saturday]);
+        _reloj.AvanzarDias(1); // la plantilla nueva rige desde el domingo
         Assert.Equal([DayOfWeek.Friday, DayOfWeek.Saturday], _svc.Jardin().Single().DiasDeCheat);
+    }
+
+    [Fact]
+    public void EditarDiasDeCheat_NoConvierteHoyEnDiaLibre()
+    {
+        var v = Crear("Café", HabitType.Moderable, DayOfWeek.Sunday);
+        _reloj.AvanzarDias(2); // sábado
+        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Saturday]);
+
+        var hoy = _svc.Jardin().Single();
+        Assert.False(hoy.EsCheatDayHoy);
+        Assert.True(hoy.PideCheckInHoy);
+
+        _reloj.AvanzarDias(1); // domingo: ya rige la plantilla nueva, el domingo deja de ser libre
+        Assert.False(_svc.Jardin().Single().EsCheatDayHoy);
+
+        _reloj.AvanzarDias(6); // sábado siguiente
+        Assert.True(_svc.Jardin().Single().EsCheatDayHoy);
+    }
+
+    [Fact]
+    public void EditarDiasDeCheat_NoReescribeHuecosPasados()
+    {
+        var v = Crear("Café", HabitType.Moderable); // jueves, sin días libres
+        _svc.CheckIn(v.Id, CheckInResult.Roto);      // jueves
+        _reloj.AvanzarDias(2);                       // sábado (viernes sin check-in)
+        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Friday]);
+        _svc.CheckIn(v.Id, CheckInResult.Roto);
+
+        var hoy = _svc.Jardin().Single();
+        Assert.Equal(1, hoy.Racha);
+        Assert.Equal(PenaltyLevel.Strike1, hoy.Penalizacion);
+    }
+
+    [Fact]
+    public void EditarDiasDeCheat_DosVecesElMismoSabado_ConservaLaPlantillaVigente()
+    {
+        var v = Crear("Café", HabitType.Moderable, DayOfWeek.Saturday);
+        _reloj.AvanzarDias(2); // sábado, hoy es libre
+        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Monday]);
+        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Tuesday]);
+
+        Assert.True(_svc.Jardin().Single().EsCheatDayHoy);
+        _reloj.AvanzarDias(3); // martes
+        Assert.True(_svc.Jardin().Single().EsCheatDayHoy);
     }
 
     [Fact]

@@ -23,6 +23,8 @@ public sealed class SqliteGardenStoreTests : IDisposable
                 Tipo = HabitType.Moderable,
                 FechaDeInicioRachaActual = new DateOnly(2026, 1, 1),
                 DiasDeCheat = [DayOfWeek.Saturday, DayOfWeek.Sunday],
+                DiasDeCheatAnteriores = [DayOfWeek.Wednesday],
+                CambioDeCheatDesde = new DateOnly(2026, 1, 4),
             },
             Estado = new StrikeState
             {
@@ -53,6 +55,8 @@ public sealed class SqliteGardenStoreTests : IDisposable
         Assert.Equal(HabitType.Moderable, leido.Habito.Tipo);
         Assert.Equal(new DateOnly(2026, 1, 1), leido.Habito.FechaDeInicioRachaActual);
         Assert.Equal([DayOfWeek.Sunday, DayOfWeek.Saturday], leido.Habito.DiasDeCheat.Order());
+        Assert.Equal([DayOfWeek.Wednesday], leido.Habito.DiasDeCheatAnteriores);
+        Assert.Equal(new DateOnly(2026, 1, 4), leido.Habito.CambioDeCheatDesde);
         Assert.Equal(2, leido.Estado.RachaConsecutivaDeDiasRotos);
         Assert.Equal(5, leido.Estado.StrikesTotalesDelArbolActual);
         Assert.Equal(PenaltyLevel.Strike2, leido.Estado.NivelDePenalizacion);

@@ -37,7 +37,9 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         Especie = r.Habito.EspecieDeArbol,
         Tipo = (int)r.Habito.Tipo,
         InicioRacha = r.Habito.FechaDeInicioRachaActual.DayNumber,
-        DiasDeCheat = r.Habito.DiasDeCheat.Aggregate(0, (m, d) => m | (1 << (int)d)),
+        DiasDeCheat = Mascara(r.Habito.DiasDeCheat),
+        DiasDeCheatAnteriores = Mascara(r.Habito.DiasDeCheatAnteriores),
+        CambioDeCheatDesde = r.Habito.CambioDeCheatDesde?.DayNumber,
         Racha = r.Estado.RachaConsecutivaDeDiasRotos,
         Cicatrices = r.Estado.StrikesTotalesDelArbolActual,
         Nivel = (int)r.Estado.NivelDePenalizacion,
@@ -58,7 +60,9 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
             EspecieDeArbol = f.Especie,
             Tipo = (HabitType)f.Tipo,
             FechaDeInicioRachaActual = DateOnly.FromDayNumber(f.InicioRacha),
-            DiasDeCheat = [.. Enum.GetValues<DayOfWeek>().Where(d => (f.DiasDeCheat & (1 << (int)d)) != 0)],
+            DiasDeCheat = Dias(f.DiasDeCheat),
+            DiasDeCheatAnteriores = Dias(f.DiasDeCheatAnteriores),
+            CambioDeCheatDesde = Fecha(f.CambioDeCheatDesde),
         },
         Estado = new StrikeState
         {
@@ -74,6 +78,11 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         Orden = f.Orden,
     };
 
+    private static int Mascara(IEnumerable<DayOfWeek> dias) => dias.Aggregate(0, (m, d) => m | (1 << (int)d));
+
+    private static List<DayOfWeek> Dias(int mascara) =>
+        [.. Enum.GetValues<DayOfWeek>().Where(d => (mascara & (1 << (int)d)) != 0)];
+
     private static DateOnly? Fecha(int? dayNumber) => dayNumber is { } n ? DateOnly.FromDayNumber(n) : null;
 
     [Table("Habitos")]
@@ -85,6 +94,8 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         public int Tipo { get; set; }
         public int InicioRacha { get; set; }
         public int DiasDeCheat { get; set; }
+        public int DiasDeCheatAnteriores { get; set; }
+        public int? CambioDeCheatDesde { get; set; }
         public int Racha { get; set; }
         public int Cicatrices { get; set; }
         public int Nivel { get; set; }

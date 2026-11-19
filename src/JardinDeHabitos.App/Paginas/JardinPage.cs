@@ -5,7 +5,7 @@ using JardinDeHabitos.Core;
 namespace JardinDeHabitos.App.Paginas;
 
 /// <summary>El jardín: una parcela por hábito, en cuadrícula de dos columnas.</summary>
-public sealed class JardinPage : ContentPage
+public sealed class JardinPage : ContentPage, IRefrescable
 {
     private readonly Grid _cuadricula = new()
     {
@@ -55,17 +55,29 @@ public sealed class JardinPage : ContentPage
     }
 #endif
 
-    protected override async void OnAppearing()
+    protected override void OnAppearing()
     {
         base.OnAppearing();
-        var jardin = Servicios.Jardin;
-        var nuevos = jardin.Refrescar();
-        Pintar(jardin.Jardin(), jardin.Hoy);
+        AlVolver();
+    }
 
-        foreach (var logro in nuevos)
+    public async void AlVolver()
+    {
+        try
         {
-            var info = LogroInfo.De(logro);
-            await DisplayAlertAsync($"Logro: {info.Nombre}", info.Descripcion, "Seguir");
+            var jardin = Servicios.Jardin;
+            var nuevos = jardin.Refrescar();
+            Pintar(jardin.Jardin(), jardin.Hoy);
+
+            foreach (var logro in nuevos)
+            {
+                var info = LogroInfo.De(logro);
+                await DisplayAlertAsync($"Logro: {info.Nombre}", info.Descripcion, "Seguir");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("No se pudo leer el jardín", ex.Message, "Entendido");
         }
     }
 

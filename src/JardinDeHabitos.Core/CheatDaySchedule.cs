@@ -9,7 +9,14 @@ public static class CheatDaySchedule
     public const int MaxDiasPorSemana = 2;
 
     public static bool EsDiaDeCheat(Habit habito, DateOnly dia) =>
-        habito.Tipo == HabitType.Moderable && habito.DiasDeCheat.Contains(dia.DayOfWeek);
+        habito.Tipo == HabitType.Moderable && PlantillaVigente(habito, dia).Contains(dia.DayOfWeek);
+
+    /// <summary>
+    /// Plantilla que rige en una fecha. Una edición del sábado aplica desde el domingo,
+    /// para que no se pueda convertir "hoy" (ni días pasados) en día libre.
+    /// </summary>
+    public static IReadOnlyList<DayOfWeek> PlantillaVigente(Habit habito, DateOnly dia) =>
+        habito.CambioDeCheatDesde is { } desde && dia < desde ? habito.DiasDeCheatAnteriores : habito.DiasDeCheat;
 
     public static void Validar(Habit habito)
     {

@@ -8,4 +8,8 @@ public class Habit
     public required HabitType Tipo { get; set; }
     public DateOnly FechaDeInicioRachaActual { get; set; }
     public List<DayOfWeek> DiasDeCheat { get; set; } = [];
+
+    /// <summary>Plantilla que rige antes de <see cref="CambioDeCheatDesde"/> (edición del sábado).</summary>
+    public List<DayOfWeek> DiasDeCheatAnteriores { get; set; } = [];
+    public DateOnly? CambioDeCheatDesde { get; set; }
 }

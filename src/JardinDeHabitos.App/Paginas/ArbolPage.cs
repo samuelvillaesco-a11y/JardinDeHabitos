@@ -4,7 +4,7 @@ using JardinDeHabitos.Core;
 namespace JardinDeHabitos.App.Paginas;
 
 /// <summary>Un árbol de cerca: check-in, cuidado diario con gestos y tratamientos.</summary>
-public sealed class ArbolPage : ContentPage
+public sealed class ArbolPage : ContentPage, IRefrescable
 {
     private readonly Guid _id;
     private readonly Escena _escena = new();
@@ -12,6 +12,8 @@ public sealed class ArbolPage : ContentPage
     private readonly ScrollView _scroll;
     private IDispatcherTimer? _timer;
     private VistaArbol _vista = null!;
+    private DateOnly _hoyMostrado;
+    private int _ticks;
 
     private readonly Label _titulo = Tema.Titulo("", 30);
     private readonly Label _etapa = Tema.Texto("", 16, Tema.FuenteNegrita, Tema.Hoja);
@@ -74,6 +76,9 @@ public sealed class ArbolPage : ContentPage
         _timer.Tick += (_, _) =>
         {
             if (_escena.Tick(0.033f) || _escena.Juego != MiniJuego.Ninguno) Repintar();
+            // Una vez por segundo: si cambió el día con la página abierta, releer.
+            if (++_ticks % 30 == 0 && _escena.Juego == MiniJuego.Ninguno && Servicios.Jardin.Hoy != _hoyMostrado)
+                AlVolver();
         };
         _timer.Start();
     }
@@ -90,9 +95,35 @@ public sealed class ArbolPage : ContentPage
         if (_escena.Juego != MiniJuego.Ninguno) _ayuda.Text = $"{Instruccion(_escena.Juego)} {_escena.Progreso}";
     }
 
+    public void AlVolver() => _ = Intentar(() => { });
+
+    /// <summary>
+    /// Ejecuta una acción sobre el jardín y vuelve a pintar. Si la pantalla quedó vieja
+    /// (por ejemplo, cambió el día), muestra el motivo en vez de cerrar la app.
+    /// </summary>
+    private async Task Intentar(Action accion)
+    {
+        try
+        {
+            accion();
+            Refrescar();
+        }
+        catch (KeyNotFoundException)
+        {
+            await Navigation.PopAsync();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            _escena.Cancelar();
+            await DisplayAlertAsync("No se pudo", ex.Message, "Entendido");
+            Refrescar();
+        }
+    }
+
     private void Refrescar()
     {
         _vista = Servicios.Jardin.Arbol(_id);
+        _hoyMostrado = Servicios.Jardin.Hoy;
         var v = _vista;
         Title = "";
         _escena.Arbol = EstadoArbol.De(v);
@@ -211,8 +242,7 @@ public sealed class ArbolPage : ContentPage
                     "Puedes borrar las cicatrices de este árbol o dejarlas como recuerdo. Es tu decisión.",
                     "Borrarlas", "Dejarlas");
                 if (!si) return;
-                Servicios.Jardin.BorrarCicatrices(_id);
-                Refrescar();
+                await Intentar(() => Servicios.Jardin.BorrarCicatrices(_id));
             };
             _extras.Add(Tema.Texto("Tu árbol cumplió seis meses.", 15, Tema.FuenteNegrita));
             _extras.Add(borrar);
@@ -229,12 +259,9 @@ public sealed class ArbolPage : ContentPage
             {
                 var chips = new Chips<DayOfWeek>(Dias.Semana, CheatDaySchedule.MaxDiasPorSemana, v.DiasDeCheat);
                 var guardar = Tema.Boton("Guardar días libres", Tema.MusgoClaro, Tema.Hueso);
-                guardar.Clicked += (_, _) =>
-                {
-                    Servicios.Jardin.EditarDiasDeCheat(_id, chips.Elegidos);
-                    Refrescar();
-                };
-                _extras.Add(Tema.Texto("Hoy es sábado: puedes cambiar los días libres de la semana.", 15));
+                guardar.Clicked += async (_, _) =>
+                    await Intentar(() => Servicios.Jardin.EditarDiasDeCheat(_id, chips.Elegidos));
+                _extras.Add(Tema.Texto("Hoy es sábado: puedes cambiar tus días libres. El cambio empieza mañana.", 15));
                 _extras.Add(chips);
                 _extras.Add(guardar);
             }
@@ -255,7 +282,7 @@ public sealed class ArbolPage : ContentPage
         {
             r = Servicios.Jardin.CheckIn(_id, resultado);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
         {
             await DisplayAlertAsync("No se pudo", ex.Message, "Entendido");
             Refrescar();
@@ -293,26 +320,24 @@ public sealed class ArbolPage : ContentPage
 
     private async void JuegoCompletado(MiniJuego juego)
     {
-        var jardin = Servicios.Jardin;
-        switch (juego)
+        if (juego == MiniJuego.Plaga && _vista.Penalizacion == PenaltyLevel.Strike2)
         {
-            case MiniJuego.Regar:
-                jardin.Regar(_id);
-                break;
-            case MiniJuego.Podar:
-                jardin.Podar(_id);
-                break;
-            case MiniJuego.Plaga when _vista.Penalizacion == PenaltyLevel.Strike2:
-                // Falta sacar las raíces podridas.
-                _escena.Iniciar(MiniJuego.Raices);
-                Repintar();
-                return;
-            case MiniJuego.Plaga:
-            case MiniJuego.Raices:
-                jardin.RegistrarTratamiento(_id);
-                break;
+            // Falta sacar las raíces podridas.
+            _escena.Iniciar(MiniJuego.Raices);
+            Repintar();
+            return;
         }
-        Refrescar();
+
+        var jardin = Servicios.Jardin;
+        await Intentar(() =>
+        {
+            switch (juego)
+            {
+                case MiniJuego.Regar: jardin.Regar(_id); break;
+                case MiniJuego.Podar: jardin.Podar(_id); break;
+                case MiniJuego.Plaga or MiniJuego.Raices: jardin.RegistrarTratamiento(_id); break;
+            }
+        });
         await _lienzo.ScaleToAsync(1.03, 120);
         await _lienzo.ScaleToAsync(1.0, 120);
     }
@@ -331,7 +356,14 @@ public sealed class ArbolPage : ContentPage
         bool si = await DisplayAlertAsync("Quitar árbol",
             $"Se borra {_vista.Nombre} del jardín. Tus logros se quedan.", "Quitar", "Cancelar");
         if (!si) return;
-        Servicios.Jardin.EliminarHabito(_id);
+        try
+        {
+            Servicios.Jardin.EliminarHabito(_id);
+        }
+        catch (KeyNotFoundException)
+        {
+            // Ya no existía: solo volver.
+        }
         await Navigation.PopAsync();
     }
 }

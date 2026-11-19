@@ -56,6 +56,19 @@ Hecho: `CheckInProcessor` + `CheckInOutcome` (tests en `CheckInProcessorTests.cs
 - Días sin check-in (huecos) aún no cuentan como rotos: pendiente decidir.
 - PENDIENTE: CheatDay hoy se acepta cualquier día y sin límite. Falta modelar los 1-2 días fijos por semana (plantilla editable cada sábado) y validar contra ellos.
 
+## Checkpoint 2026-11-18 (rama `fase1/app`, pausado por el usuario)
+
+Hecho (todo commiteado, 79/79 tests Core verdes):
+- Core: calendario de cheat days (edición del sábado rige desde el domingo), `GardenService`, logros (LeyendaCaida secreta), `SqliteGardenStore`.
+- App MAUI Android (`src/JardinDeHabitos.App`): jardín en cuadrícula, árbol con cielo, check-in, mini-juegos con gestos (bichos, raíces, regar, podar), logros, aviso de día libre 9:00, galería de etapas solo en Debug.
+- Probado en emulador `Jardin_API36` (arrancar CON ventana; sin ventana el emulador se cae con exit 139).
+- APK Release firmado: `src/JardinDeHabitos.App/bin/Release/net10.0-android/publish/org.jardindehabitos.app-Signed.apk`. NO instalado en el teléfono (teléfono): falta permiso del usuario.
+
+Pendiente (en este orden):
+1. Probar en emulador los arreglos de la revisión final: refrescar al volver del fondo (`IRefrescable`, `App.OnResume`) y handlers con `Intentar(...)` en `ArbolPage`. Compilan, sin probar a mano.
+2. Menores diferidos de la revisión: doble toque crea duplicados; LeyendaCaida sin transacción SQLite; receptor de aviso sin try/catch; aviso no se reprograma tras reinicio; sin versión de esquema SQLite; diálogo de muerte dice "hoy mismo" (es mañana); timer 30 Hz siempre activo; sin modo acelerado en la app.
+3. Merge de `fase1/app` a `main` y decidir si se instala el APK en el teléfono.
+
 ## Siguiente paso
 
 1. ~~Clase que calcula `GrowthStage` + modo acelerado~~ (hecho).

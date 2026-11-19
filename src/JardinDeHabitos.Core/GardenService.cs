@@ -111,17 +111,19 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
         if (!CheatDaySchedule.PuedeEditar(Hoy))
             throw new InvalidOperationException("Los cheat days se editan los sábados.");
 
-        var anteriores = r.Habito.DiasDeCheat;
-        r.Habito.DiasDeCheat = [.. dias];
-        try
+        var nuevo = new Habit
         {
-            CheatDaySchedule.Validar(r.Habito);
-        }
-        catch
-        {
-            r.Habito.DiasDeCheat = anteriores;
-            throw;
-        }
+            Nombre = r.Habito.Nombre,
+            EspecieDeArbol = r.Habito.EspecieDeArbol,
+            Tipo = r.Habito.Tipo,
+            DiasDeCheat = [.. dias],
+        };
+        CheatDaySchedule.Validar(nuevo);
+
+        // La plantilla que rige hoy se conserva hasta mañana (domingo).
+        r.Habito.DiasDeCheatAnteriores = [.. CheatDaySchedule.PlantillaVigente(r.Habito, Hoy)];
+        r.Habito.DiasDeCheat = nuevo.DiasDeCheat;
+        r.Habito.CambioDeCheatDesde = Hoy.AddDays(1);
     });
 
     public void EliminarHabito(Guid id) => store.Eliminar(Buscar(id).Habito.Id);
