@@ -35,7 +35,16 @@ public static class Bloqueo
 #pragma warning disable CA1422 // obsoleto en 30+, pero es la forma correcta en Android 10
             builder.SetDeviceCredentialAllowed(true);
 #pragma warning restore CA1422
-        builder.Build().Authenticate(new CancellationSignal(), actividad.MainExecutor!, new Callback(tcs));
+        try
+        {
+            builder.Build().Authenticate(new CancellationSignal(), actividad.MainExecutor!, new Callback(tcs));
+        }
+        catch (Java.Lang.Exception ex)
+        {
+            // Si el sistema no deja pedir el bloqueo, el estante se queda cerrado (nunca se abre sin permiso).
+            Android.Util.Log.Warn("JardinDeHabitos", $"Bloqueo falló: {ex}");
+            tcs.TrySetResult(Resultado.Cancelado);
+        }
         return tcs.Task;
     }
 

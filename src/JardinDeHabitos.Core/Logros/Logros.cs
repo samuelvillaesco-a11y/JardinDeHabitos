@@ -47,7 +47,7 @@ public sealed record LogroDef(
     public string TextoNivel(int nivel)
     {
         int meta = Niveles[Math.Clamp(nivel, 1, Niveles.Length) - 1];
-        var habito = Habito is { } h ? CatalogoHabitos.De(h).Nombre.ToLower(new System.Globalization.CultureInfo("es-MX")) : "";
+        var habito = Habito is { } h ? CatalogoHabitos.De(h).ConArticulo : "";
         return Descripcion.Replace("{n}", meta.ToString()).Replace("{h}", habito);
     }
 }

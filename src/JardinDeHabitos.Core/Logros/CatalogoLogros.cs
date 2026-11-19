@@ -27,7 +27,7 @@ public static class CatalogoLogros
     private static IEnumerable<LogroDef> Generales()
     {
         const CategoriaLogro G = CategoriaLogro.General;
-        yield return new("gen.semilla", G, null, "Manos a la tierra", "Plantaste {n} árbol(es) en tu jardín.", Stat.Plantados, [1, 3, 5],
+        yield return new("gen.semilla", G, null, "Manos a la tierra", "Árboles plantados en tu jardín: {n}.", Stat.Plantados, [1, 3, 5],
             "Decidir cambiar es la etapa de \"preparación\": ya es un paso real.");
         yield return new("gen.brote", G, null, "Del brote al fruto", "Un árbol llegó a {n} días de crecimiento.", Stat.RachaMax, [7, 30, 180]);
         yield return new("gen.legendaria", G, null, "Fruta Legendaria", "Un árbol llegó a {n} días de crecimiento.", Stat.RachaMax, [365, 730, 1095],
@@ -42,7 +42,7 @@ public static class CatalogoLogros
             "Marcaste \"Lo rompí\" con honestidad. Decir la verdad es parte de crecer.", Stat.Honestos, [1],
             "La culpa tras un desliz aumenta el riesgo de recaída; la honestidad sin castigo ayuda a seguir.");
         yield return new("gen.cura", G, null, "Mano que sana", "Cuidaste un árbol enfermo hasta que sanó.", Stat.CuidadosTotales, [1]);
-        yield return new("gen.apoyo", G, null, "Raíces compartidas", "Registraste {n} asistencia(s) a tu grupo de apoyo o terapia.", Stat.AsistenciasTotales, [1, 10, 50],
+        yield return new("gen.apoyo", G, null, "Raíces compartidas", "Asistencias registradas a tu grupo de apoyo o terapia: {n}.", Stat.AsistenciasTotales, [1, 10, 50],
             "Pedir ayuda no es debilidad: el apoyo profesional y de grupo mejora la recuperación.");
         yield return new("gen.replantar", G, null, "Volver a plantar", "Tras perder un árbol, su sucesor llegó a 7 días.", Stat.Replantes, [1],
             "La mayoría logra el cambio después de varios intentos. Volver a empezar es parte del camino.");
@@ -139,9 +139,9 @@ public static class CatalogoLogros
                 var (titulo, niveles, nota) = tiempos[i];
                 yield return new($"{p}.tiempo{i + 1}", C, h, titulo, "{n} días cumpliendo tu meta con {h}.", Stat.De(Stat.Racha, h), niveles, nota);
             }
-            yield return new($"{p}.constancia", C, h, "Jardinero de cada día", "{n} días seguidos registrando {h} sin faltar uno.", Stat.De(Stat.Constancia, h), [7, 30, 90]);
+            yield return new($"{p}.constancia", C, h, "Jardinero de cada día", "{n} días seguidos registrando tu avance con {h}, sin faltar uno.", Stat.De(Stat.Constancia, h), [7, 30, 90]);
             yield return new($"{p}.bitacora", C, h, "Bitácora de campo", "{n} check-ins honestos sobre {h}.", Stat.De(Stat.CheckIns, h), [30, 100, 365]);
-            yield return new($"{p}.replantar", C, h, "Volver a sembrar", "Después de perder un árbol de {h}, el nuevo llegó a {n} días.", Stat.De(Stat.TrasMuerte, h), [7, 30, 90],
+            yield return new($"{p}.replantar", C, h, "Volver a sembrar", "Después de perder el árbol dedicado a {h}, el nuevo llegó a {n} días.", Stat.De(Stat.TrasMuerte, h), [7, 30, 90],
                 "Recaer no borra lo aprendido.");
             yield return new($"{p}.cura", C, h, "Mano que cura", "Tuviste un tropiezo con {h}, lo dijiste y cuidaste tu árbol hasta sanarlo.", Stat.De(Stat.Cuidados, h), [1]);
             yield return new($"{p}.apoyo", C, h, "No se crece solo", "Fuiste {n} veces a tu grupo o a terapia por {h}.", Stat.De(Stat.Asistencias, h), [4, 12, 52]);
@@ -151,7 +151,7 @@ public static class CatalogoLogros
                 "Los fines de semana suelen ser de más riesgo.");
             if (CatalogoHabitos.De(h).PermiteModerar)
             {
-                yield return new($"{p}.libres", C, h, "Disfrutar sin desbordar", "{n} días libres de {h} vividos sin perder el rumbo.", Stat.De(Stat.Libres, h), [8, 26, 104],
+                yield return new($"{p}.libres", C, h, "Disfrutar sin desbordar", "{n} días libres con {h} vividos sin perder el rumbo.", Stat.De(Stat.Libres, h), [8, 26, 104],
                     SoloSiModera: true);
             }
         }
@@ -163,7 +163,7 @@ public static class CatalogoLogros
         yield return new("oc.ramas", O, null, "Tijera de plata", "Cortaste {n} ramas sueltas y hierbas.", Stat.Ramas, [60, 135, 270]);
         yield return new("oc.bichos", O, null, "Exterminador de bolsillo", "Quitaste {n} bichos de tus árboles.", Stat.Bichos, [20, 50, 100]);
         yield return new("oc.raices", O, null, "Arqueólogo de raíces", "Sacaste {n} raíces podridas de la tierra.", Stat.Raices, [9, 24, 45]);
-        yield return new("oc.rescate", O, null, "Rescate a tiempo", "Resolviste {n} emergencia(s) de tu jardín.", Stat.MiniEventos, [1, 3, 6]);
+        yield return new("oc.rescate", O, null, "Rescate a tiempo", "Emergencias del jardín resueltas: {n}.", Stat.MiniEventos, [1, 3, 6]);
         yield return new("oc.nocturno", O, null, "Riego de luna", "Regaste de noche (después de las 9) en {n} días.", Stat.RiegosNocturnos, [10, 25, 50]);
         yield return new("oc.madrugada", O, null, "Rocío de madrugada", "Regaste antes de las 7 de la mañana en {n} días.", Stat.RiegosMadrugada, [10, 25, 50]);
         yield return new("oc.completo", O, null, "Ni una hoja seca", "Regaste todos tus árboles el mismo día en {n} días.", Stat.JardinCompleto, [21, 45, 90]);

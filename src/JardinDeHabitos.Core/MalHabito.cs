@@ -22,6 +22,23 @@ public enum MalHabito
 /// <summary>Qué modos admite cada hábito y si necesita aviso médico al elegirlo.</summary>
 public sealed record HabitoInfo(MalHabito Habito, string Nombre, bool PermiteModerar, bool PermiteAbstinencia, string? AvisoMedico)
 {
+    /// <summary>Nombre con artículo, para frases: "con el alcohol", "por las apuestas".</summary>
+    public string ConArticulo => Habito switch
+    {
+        MalHabito.Alcohol => "el alcohol",
+        MalHabito.Apuestas => "las apuestas",
+        MalHabito.Azucares => "los azúcares",
+        MalHabito.Cafeina => "la cafeína",
+        MalHabito.Cigarro => "el cigarro y el vapeo",
+        MalHabito.Compras => "las compras impulsivas",
+        MalHabito.Harinas => "las harinas procesadas",
+        MalHabito.Pornografia => "la pornografía",
+        MalHabito.Pantallas => "las redes sociales y las pantallas",
+        MalHabito.Sal => "la sal",
+        MalHabito.Sustancias => "las sustancias",
+        _ => "tu hábito",
+    };
+
     public IEnumerable<HabitType> Modos =>
         new[] { (PermiteAbstinencia, HabitType.AbstinenciaTotal), (PermiteModerar, HabitType.Moderable) }
             .Where(m => m.Item1).Select(m => m.Item2);

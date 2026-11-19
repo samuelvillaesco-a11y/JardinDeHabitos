@@ -97,6 +97,6 @@ public class LogrosTests
     public void TextoNivel_ReemplazaMetaYHabito()
     {
         var d = CatalogoLogros.De("hab.cigarro.tiempo1");
-        Assert.Equal("7 días cumpliendo tu meta con cigarro y vapeo.", d.TextoNivel(2));
+        Assert.Equal("7 días cumpliendo tu meta con el cigarro y el vapeo.", d.TextoNivel(2));
     }
 }

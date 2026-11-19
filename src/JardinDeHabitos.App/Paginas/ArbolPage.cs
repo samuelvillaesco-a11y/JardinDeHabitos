@@ -225,7 +225,11 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             return;
         }
         var fui = Tema.Boton("Hoy fui a mi grupo o sesión", Tema.MusgoClaro, Tema.Hueso);
-        fui.Clicked += async (_, _) => await Intentar(() => Servicios.Jardin.RegistrarAsistencia(_id));
+        fui.Clicked += async (_, _) =>
+        {
+            await Intentar(() => Servicios.Jardin.RegistrarAsistencia(_id));
+            await Avisos.AnunciarLogros(this);
+        };
         _checkIn.Add(fui);
     }
 
@@ -290,6 +294,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
                     "Borrarlos", "Dejarlos");
                 if (!si) return;
                 await Intentar(() => Servicios.Jardin.Borron(_id));
+                await Avisos.AnunciarLogros(this);
             };
             _extras.Add(Tema.Texto("Tres meses sin tropiezos: puedes empezar con la tierra limpia.", 15, Tema.FuenteNegrita));
             _extras.Add(borrar);

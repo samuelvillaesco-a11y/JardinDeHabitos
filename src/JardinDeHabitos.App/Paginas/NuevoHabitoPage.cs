@@ -47,7 +47,7 @@ public sealed class NuevoHabitoPage : ContentPage
         WidthRequest = 90,
     };
     private readonly Chips<int> _previoUnidad = new([(1, "días"), (30, "meses"), (365, "años")], iniciales: [1]);
-    private readonly HorizontalStackLayout _filaPrevio;
+    private readonly Grid _filaPrevio;
     private readonly Chips<string> _apoyo = new([("grupo", "Grupo de apoyo"), ("terapia", "Terapia")], maximo: 2);
 
     private readonly Label _error = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
@@ -84,10 +84,18 @@ public sealed class NuevoHabitoPage : ContentPage
             Children = { Tema.Texto("Antes de empezar, cuídate", 16, Tema.FuenteNegrita, Tema.Miel), _textoAviso },
         }, Tema.TierraOscura, Tema.Miel);
 
-        _filaPrevio = new HorizontalStackLayout { Spacing = 10, Children = { _previoCantidad, _previoUnidad } };
+        _filaPrevio = new Grid
+        {
+            ColumnDefinitions = [new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star)],
+            ColumnSpacing = 10,
+        };
+        _filaPrevio.Add(_previoCantidad, 0);
+        _filaPrevio.Add(_previoUnidad, 1);
+        _previoCantidad.VerticalOptions = LayoutOptions.Start;
+        var notaPrevio = Tema.Texto("Tu árbol nacerá con esa edad.", 13, color: Tema.HuesoTenue);
         _tipo.Cambio += ActualizarTipo;
-        _tienePrevio.Cambio += () => _filaPrevio.IsVisible = _tienePrevio.Elegido;
-        _filaPrevio.IsVisible = false;
+        _tienePrevio.Cambio += () => _filaPrevio.IsVisible = notaPrevio.IsVisible = _tienePrevio.Elegido;
+        _filaPrevio.IsVisible = notaPrevio.IsVisible = false;
 
         var plantar = Tema.Boton("Plantar", Tema.Miel);
         plantar.Clicked += Plantar;
@@ -101,7 +109,7 @@ public sealed class NuevoHabitoPage : ContentPage
                 Tema.Texto("¿Ya llevas tiempo limpio que puedas comprobar? Por ejemplo, una ficha de tu grupo.", 15),
                 _tienePrevio,
                 _filaPrevio,
-                Tema.Texto("Tu árbol nacerá con esa edad.", 13, color: Tema.HuesoTenue),
+                notaPrevio,
                 Tema.Texto("¿Tienes acompañamiento?", 15),
                 _apoyo,
                 Tema.Texto("Si eliges alguno, podrás registrar cada vez que vayas.", 13, color: Tema.HuesoTenue),

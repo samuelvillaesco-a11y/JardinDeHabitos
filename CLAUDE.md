@@ -9,31 +9,28 @@ App personal (no Play Store) para dejar malos hábitos: cada hábito es un árbo
 - MAUI (Android) se agrega hasta la Fase 1, cuando ya haya algo que mostrar
 - Target inicial: solo Android, x86_64, JDK 21 (Microsoft build) + Android SDK API 36 ya instalados en el equipo
 
-## Reglas de diseño confirmadas
+## Reglas de diseño confirmadas (Fase 2, 2026-11-19)
 
-**Hábitos:** hasta 9-10, cada uno `AbstinenciaTotal` (alcohol, pornografía, apuestas, cigarro — sin cheat days) o `Moderable` (dieta: azúcar, harinas, café — sí permite cheat days).
+Spec completo: `docs/superpowers/specs/2026-11-19-jardin-secreto-logros-design.md`. Plan: `docs/superpowers/plans/2026-11-19-jardin-secreto-logros.md`.
+**Todo tiempo/umbral debe tener fundamento médico** (tabla "Fundamentos" del spec: NIAAA, DSM-5, NCI/NHS, FDA, Lally 2010, Marlatt).
 
-**Check-in diario:** una vez al día el usuario marca Cumplido / Roto / CheatDay.
+**Discreción:** fuera del estante nunca se muestra el hábito, solo la especie del árbol (jardín, árbol, notificaciones, diálogos). Notificación de logro: siempre "🏆 ¡Desbloqueaste un logro!" / "Abre tu jardín para verlo."
 
-**Strikes (dos contadores separados):**
-- Racha consecutiva de días rotos: escala la penalización. Strike 1 (1 día roto) = 2 días de cuidado de plaga simple. Strike 2 (2 seguidos) = 5 días adicionales por raíces podridas (total acumulado 1 semana). Strike 3 (3 seguidos) = el árbol muere, TODO se resetea a 0. Un día cumplido reinicia esta racha a 0 (el periodo de cuidado ya en curso se completa igual).
-- Strikes totales del árbol actual: histórico visible ("cicatrices"), NO se borra con días limpios — solo al morir el árbol, o de forma opcional cuando el árbol llega a 6 meses (ahí se da la opción, no automática, de borrarlo).
+**Hábitos:** se eligen de `CatalogoHabitos` (alfabético, "Otros" al final); nunca se escriben. Solo abstinencia: Apuestas, Pornografía, Sustancias. El resto elige modo. Alcohol y Sustancias muestran aviso médico (Línea de la Vida 800 911 2000). Un árbol por hábito (salvo Otros) y una especie por árbol (10 especies en `EspeciesDeArbol`). Cuestionario opcional: tiempo previo comprobable (nace con esos días) y grupo/terapia (habilita registro de asistencia).
 
-**Cheat days** (solo hábitos Moderable): 1-2 días fijos por semana (domingo-sábado), editable cada sábado o reutilizable como plantilla. No piden check-in; el árbol se muestra "en paz". Notificación de disclaimer recordando moderación.
+**Crecimiento:** `Habit.DiasDeCrecimiento` (no calendario). +1 por check-in Cumplido o día libre (si el último día normal tuvo check-in), solo si el árbol no está en cuidado. Sin check-in se pausa.
 
-**Etapas de crecimiento (8, ligadas a tiempo real desde el inicio de la racha actual):** Semilla (día 0) → Brote (día 1-2) → Arbusto (día 3-4) → ÁrbolJoven (día 5-6) → Flor (día 7) → FrutaInmadura (1 mes) → FrutaComestible (6 meses) → FrutaLegendaria (1 año). Los umbrales de los primeros días son propuestos/ajustables; semana/mes/6 meses/año están confirmados.
+**Strikes declarados** (se acumulan, no tienen que ser seguidos): 1.º plaga 3 días; 2.º plaga + raíces = 8 días (si la plaga sigue activa: fin de plaga + 5); 3.º muerte (semilla, todo a 0).
+**Abandono** (contador aparte, mismo efecto): días normales sin check-in; 7 → mini-evento (caracol/rama seca/tierra reseca, se resuelve en segundos); 14/21/28 → strike de abandono 1/2/3. `AvanceDiario.Avanzar` es idempotente y debe correr antes de cualquier check-in (GardenService lo hace en `Sincronizar`).
+**Borrón** opcional a los 90 días sin ningún strike (remisión temprana DSM-5); borra ambos contadores.
 
-**Cuidado activo diario:** regar/podar libremente en cualquier momento, no solo durante penalización — loop principal tipo "mascota virtual".
+**Logros** (`CatalogoLogros`, 1-3 estrellas): Generales (visibles siempre), Hábito (≥10 por hábito, visibles al plantar ese hábito; "días libres" solo si se moderó), Ocultos de mini-juegos (inexistentes hasta ganarse, ★≈3 semanas, ★★★≈3 meses), Malditos (debuff en mini-juegos hasta su redención) y Legendarios (Fénix, redenciones, 5 años). Estadísticas en tabla `Estadisticas`; niveles en `NivelesLogro`. Estante (LogrosPage) tras `BiometricPrompt` (huella/PIN/patrón del teléfono).
 
-**Logros (a nivel de usuario, NO del árbol — persisten aunque el árbol muera):**
-- FrutaLegendaria: normal, se registra al llegar a esa etapa.
-- LeyendaCaida: SECRETO — se dispara si un árbol que ya llegó a FrutaLegendaria vuelve a morir. Placa dorada permanente. No anunciar ni listar antes de desbloquearse.
+**Notificaciones** (`Notificaciones.cs`): 9:00 (días libres, etapas, emergencias, plagas por abandono, logros) y 20:00 (recordatorio rotativo si falta check-in).
 
-**Tratamientos:** mini-juegos con gestos (tocar, arrastrar) — nunca solo botones de confirmación.
+**Estilo visual:** vectorial/plano, degradados cálidos, "lo-fi"; nada de pixel art.
 
-**V1 (alcance actual):** solo temporizadores + registro manual. Detección automática de apps/webs queda fuera, fase futura. Un solo dispositivo (SQLite local). Funciones sociales (apadrinaje, contactos de emergencia) son ideas futuras.
-
-**Estilo visual (para cuando lleguemos al arte):** vectorial/plano, degradados cálidos (verdes, cafés, amarillos), sensación "lo-fi" de bajo renderizado — nada de pixel art retro.
+## Historia (Fases 0-1)
 
 ## Estado actual (Fase 0, en progreso)
 
@@ -87,3 +84,11 @@ Hallazgos (pendientes):
 2. ~~Procesador de check-in diario + strikes + muerte~~ (hecho).
 3. ~~Tests xUnit de crecimiento, strikes, muerte y hito de 6 meses~~ (hecho).
 4. Decidir qué pasa con días sin check-in; modelo de logros de usuario; luego persistencia SQLite.
+
+## Checkpoint 2026-11-19 (Fase 2 en rama `fase2/jardin-secreto`)
+
+Hecho: todo lo de "Reglas de diseño confirmadas (Fase 2)". Esquema SQLite v2 (migra v1: nombre libre → categoría, cicatrices → strikes máx. 2, logros viejos → niveles). 123/123 tests Core.
+Probado en emulador: migración de la base real v1, plantar (lista, aviso médico, tiempo previo, especies libres), estante con PIN, check-in roto + plaga + mini-juego, notificación de las 20:00 (disparada a mano con `adb root` + `am broadcast -n org.jardindehabitos.app/crc64003d8bdd0e7a181d.NotificacionesReceiver --ei momento 20`).
+Notas: el manifiesto necesita `USE_BIOMETRIC`; la pantalla de PIN sale negra en capturas (FLAG_SECURE).
+Hallazgos del 2026-11-19 resueltos en Fase 2: 1 (árboles crecían sin check-in), 2 (ya no hay campo de nombre), 3 (el jardín se relee al pasar la medianoche), 4 (logros tempranos y por hábito). Sigue pendiente el 5 (3.er día libre quita el primero sin avisar).
+Las reglas de "Historia (Fases 0-1)" quedan reemplazadas por las de Fase 2 donde choquen.
