@@ -92,3 +92,7 @@ Probado en emulador: migración de la base real v1, plantar (lista, aviso médic
 Notas: el manifiesto necesita `USE_BIOMETRIC`; la pantalla de PIN sale negra en capturas (FLAG_SECURE).
 Hallazgos del 2026-11-19 resueltos en Fase 2: 1 (árboles crecían sin check-in), 2 (ya no hay campo de nombre), 3 (el jardín se relee al pasar la medianoche), 4 (logros tempranos y por hábito). Sigue pendiente el 5 (3.er día libre quita el primero sin avisar).
 Las reglas de "Historia (Fases 0-1)" quedan reemplazadas por las de Fase 2 donde choquen.
+Estante de emblemas (commit 0b4bfa8): bronce/plata/oro según estrellas, malditos negros, legendarios rojos/morados/arcoíris; detalle solo al tocar; punto rojo y "Recién conseguidos"; filtros por categoría/rango/fecha que solo muestran Mini-juegos/Malditos/Legendarios después de ganar uno. 132/132 tests.
+Probado también en modo acelerado: 8 días sin visita → "¡Necesita ayuda!" + caracoles; el rescate desbloquea el oculto "Rescate a tiempo" con aviso genérico.
+OJO: en el emulador la app PhoneBox (net.oxog.phonebox.deskpanel) puede pasar al frente y recibir los toques; el teléfono puede estar conectado por USB: usar siempre `adb -s emulator-5554`.
+
