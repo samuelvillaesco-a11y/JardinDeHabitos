@@ -138,6 +138,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         var v = _vista;
         Title = "";
         _escena.Arbol = EstadoArbol.De(v);
+        _escena.Debuffs = Servicios.Jardin.Debuffs();
 
         bool jugando = _escena.Juego != MiniJuego.Ninguno;
         _ayuda.IsVisible = jugando;
@@ -146,7 +147,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         _cuidado.IsVisible = !jugando;
         _extras.IsVisible = !jugando;
 
-        _titulo.Text = v.Nombre;
+        _titulo.Text = v.Especie;
         _etapa.Text = $"{Tema.NombreEtapa(v.Etapa)}, día {v.Dias}";
         _detalle.Text = Detalle(v);
 
@@ -167,12 +168,18 @@ public sealed class ArbolPage : ContentPage, IRefrescable
                 ? $"Mañana llega a {Tema.NombreEtapa(siguiente.Etapa).ToLower(Tema.Cultura)}."
                 : $"Faltan {faltan} días para {Tema.NombreEtapa(siguiente.Etapa).ToLower(Tema.Cultura)}.");
         }
-        if (v.Cicatrices > 0)
-            partes.Add(v.Cicatrices == 1 ? "Tiene 1 cicatriz." : $"Tiene {v.Cicatrices} cicatrices.");
-        if (v.Racha > 0)
-            partes.Add(v.Racha == 1
-                ? "Un día roto. Si el próximo también, salen raíces podridas."
-                : "Dos días rotos seguidos: un tercero y el árbol muere.");
+        if (v.DiasSinVisita > 0)
+            partes.Add(v.DiasSinVisita == 1
+                ? "Ayer no lo visitaste: hoy no creció."
+                : $"Lleva {v.DiasSinVisita} días sin visita y está en pausa. A los 14 le cae una plaga.");
+        if (v.EnCuidado)
+            partes.Add("Mientras está enfermo no crece.");
+        if (v.Strikes > 0)
+            partes.Add(v.Strikes == 1
+                ? "Tiene 1 tropiezo: al segundo le salen raíces podridas."
+                : "Tiene 2 tropiezos: un tercero y el árbol vuelve a ser semilla.");
+        if (v.StrikesAbandono > 0)
+            partes.Add(v.StrikesAbandono == 1 ? "Y 1 marca por abandono." : $"Y {v.StrikesAbandono} marcas por abandono.");
         return string.Join(" ", partes);
     }
 
@@ -187,6 +194,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         if (!v.PideCheckInHoy)
         {
             _checkIn.Add(Tema.Texto("Check-in de hoy listo. Vuelve mañana.", 15, color: Tema.HuesoTenue));
+            AgregarAsistencia(v);
             return;
         }
 
@@ -203,8 +211,22 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         botones.Add(cumpli, 0);
         botones.Add(rompi, 1);
 
-        _checkIn.Add(Tema.Texto($"¿Cómo te fue hoy con {v.Nombre.ToLower(Tema.Cultura)}?", 17, Tema.FuenteNegrita));
+        _checkIn.Add(Tema.Texto("¿Cómo te fue hoy?", 17, Tema.FuenteNegrita));
         _checkIn.Add(botones);
+        AgregarAsistencia(v);
+    }
+
+    private void AgregarAsistencia(VistaArbol v)
+    {
+        if (!v.PideAsistencia) return;
+        if (v.AsistioHoy)
+        {
+            _checkIn.Add(Tema.Texto("Asistencia de hoy registrada. Pedir ayuda también es cuidar.", 14, color: Tema.HuesoTenue));
+            return;
+        }
+        var fui = Tema.Boton("Hoy fui a mi grupo o sesión", Tema.MusgoClaro, Tema.Hueso);
+        fui.Clicked += async (_, _) => await Intentar(() => Servicios.Jardin.RegistrarAsistencia(_id));
+        _checkIn.Add(fui);
     }
 
     private void PintarCuidado(VistaArbol v)
@@ -212,16 +234,30 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         _cuidado.Clear();
         _cuidado.Add(Tema.Texto("Cuidado de hoy", 17, Tema.FuenteNegrita));
 
-        if (v.Penalizacion != PenaltyLevel.Ninguna && !v.TratadoHoy)
+        if (v.MiniEvento != MiniEvento.Ninguno)
         {
-            string que = v.Penalizacion == PenaltyLevel.Strike2 ? "plaga y raíces podridas" : "plaga";
-            string hasta = v.FinPenalizacion is { } fin ? $" Cuidado diario hasta el {Tema.FechaCorta(fin.AddDays(-1))}." : "";
+            var (texto, juego) = v.MiniEvento switch
+            {
+                MiniEvento.Caracol => ("¡Unos caracoles se colaron mientras no estabas!", MiniJuego.Plaga),
+                MiniEvento.RamaSeca => ("Se secó una rama mientras no estabas.", MiniJuego.Podar),
+                _ => ("La tierra se resecó mientras no estabas.", MiniJuego.Regar),
+            };
+            _cuidado.Add(Tema.Texto(texto, 15, Tema.FuenteNegrita, Tema.Miel));
+            var rescatar = Tema.Boton("Rescatarlo", Tema.Miel);
+            rescatar.Clicked += (_, _) => Jugar(juego, rescate: true);
+            _cuidado.Add(rescatar);
+        }
+
+        if (v.EnCuidado && !v.TratadoHoy)
+        {
+            string que = v.Plaga && v.Raices ? "plaga y raíces podridas" : v.Plaga ? "plaga" : "raíces podridas";
+            string hasta = v.FinCuidado is { } fin ? $" Cuidado diario hasta el {Tema.FechaCorta(fin.AddDays(-1))}." : "";
             _cuidado.Add(Tema.Texto($"Tiene {que}.{hasta}", 15, color: Tema.Miel));
             var curar = Tema.Boton("Curar el árbol", Tema.Miel);
-            curar.Clicked += (_, _) => Jugar(MiniJuego.Plaga);
+            curar.Clicked += (_, _) => Jugar(v.Plaga ? MiniJuego.Plaga : MiniJuego.Raices);
             _cuidado.Add(curar);
         }
-        else if (v.Penalizacion != PenaltyLevel.Ninguna)
+        else if (v.EnCuidado)
         {
             _cuidado.Add(Tema.Texto("Tratamiento de hoy hecho. Mañana toca otra vez.", 15, color: Tema.HuesoTenue));
         }
@@ -244,18 +280,18 @@ public sealed class ArbolPage : ContentPage, IRefrescable
     {
         _extras.Clear();
 
-        if (v.PuedeBorrarCicatrices)
+        if (v.PuedeBorron)
         {
-            var borrar = Tema.Boton("Borrar cicatrices", Tema.MusgoClaro, Tema.Hueso);
+            var borrar = Tema.Boton("Borrón y cuenta nueva", Tema.MusgoClaro, Tema.Hueso);
             borrar.Clicked += async (_, _) =>
             {
-                bool si = await DisplayAlertAsync("Seis meses de racha",
-                    "Puedes borrar las cicatrices de este árbol o dejarlas como recuerdo. Es tu decisión.",
-                    "Borrarlas", "Dejarlas");
+                bool si = await DisplayAlertAsync("Tres meses sin tropiezos",
+                    "Llevas 90 días sin strikes en este árbol. Puedes borrarlos o dejarlos como recuerdo. Es tu decisión.",
+                    "Borrarlos", "Dejarlos");
                 if (!si) return;
-                await Intentar(() => Servicios.Jardin.BorrarCicatrices(_id));
+                await Intentar(() => Servicios.Jardin.Borron(_id));
             };
-            _extras.Add(Tema.Texto("Tu árbol cumplió seis meses.", 15, Tema.FuenteNegrita));
+            _extras.Add(Tema.Texto("Tres meses sin tropiezos: puedes empezar con la tierra limpia.", 15, Tema.FuenteNegrita));
             _extras.Add(borrar);
         }
 
@@ -312,53 +348,67 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         var o = r.Outcome;
         if (o.ArbolMurio)
         {
-            await DisplayAlertAsync("El árbol murió",
-                "Tres días rotos seguidos. Todo vuelve a empezar: hoy queda plantada una semilla nueva. Mañana haces su primer check-in.",
+            await DisplayAlertAsync("El árbol volvió a ser semilla",
+                "Fue el tercer tropiezo. Lo que aprendiste no se pierde: hoy queda plantada una semilla nueva y mañana haces su primer check-in.",
                 "Plantar de nuevo");
         }
         else if (resultado == CheckInResult.Roto)
         {
-            string msg = o.Penalizacion == PenaltyLevel.Strike2
-                ? "Dos días seguidos: le salieron raíces podridas. Necesita cuidado diario durante una semana."
-                : "Le cayó una plaga. Necesita cuidado durante 2 días. Mañana es otro día.";
-            await DisplayAlertAsync("Día roto", msg, "Cuidarlo");
+            var v = Servicios.Jardin.Arbol(_id);
+            string msg = v.Raices
+                ? "Le salieron raíces podridas. Hay que cuidarlo cada día hasta que sane; mientras tanto no crece."
+                : "Le cayó una plaga. Defiéndelo durante 3 días; mientras tanto no crece. Mañana es otro día.";
+            await DisplayAlertAsync("Gracias por decirlo", msg, "Cuidarlo");
         }
 
-        foreach (var logro in r.NuevosLogros)
-        {
-            var info = LogroInfo.De(logro);
-            await DisplayAlertAsync($"Logro: {info.Nombre}", info.Descripcion, "Seguir");
-        }
+        await Avisos.AnunciarLogros(this);
         Refrescar();
     }
 
-    private void Jugar(MiniJuego juego)
+    private void Jugar(MiniJuego juego, bool rescate = false)
     {
-        _escena.Iniciar(juego);
+        _escena.Iniciar(juego, rescate);
         if (_timer is not null) _timer.Interval = Rapido;
         Refrescar();
     }
 
     private async void JuegoCompletado(MiniJuego juego)
     {
-        if (juego == MiniJuego.Plaga && _vista.Penalizacion == PenaltyLevel.Strike2)
+        var jardin = Servicios.Jardin;
+        int piezas = _escena.Piezas;
+
+        if (_escena.Rescate)
+        {
+            await Intentar(() => jardin.ResolverMiniEvento(_id, juego == MiniJuego.Plaga ? piezas : 0));
+        }
+        else if (juego == MiniJuego.Plaga && _vista.Raices)
         {
             // Falta sacar las raíces podridas.
+            await Intentar(() => jardin.RegistrarJuego(_id, MiniJuegoTipo.Plaga, piezas));
             _escena.Iniciar(MiniJuego.Raices);
-            Repintar();
+            Refrescar();
             return;
         }
-
-        var jardin = Servicios.Jardin;
-        await Intentar(() =>
+        else
         {
-            switch (juego)
+            await Intentar(() =>
             {
-                case MiniJuego.Regar: jardin.Regar(_id); break;
-                case MiniJuego.Podar: jardin.Podar(_id); break;
-                case MiniJuego.Plaga or MiniJuego.Raices: jardin.RegistrarTratamiento(_id); break;
-            }
-        });
+                switch (juego)
+                {
+                    case MiniJuego.Regar: jardin.RegistrarJuego(_id, MiniJuegoTipo.Regar); break;
+                    case MiniJuego.Podar: jardin.RegistrarJuego(_id, MiniJuegoTipo.Podar, piezas); break;
+                    case MiniJuego.Plaga:
+                        jardin.RegistrarJuego(_id, MiniJuegoTipo.Plaga, piezas);
+                        jardin.RegistrarTratamiento(_id);
+                        break;
+                    case MiniJuego.Raices:
+                        jardin.RegistrarJuego(_id, MiniJuegoTipo.Raices, piezas);
+                        jardin.RegistrarTratamiento(_id);
+                        break;
+                }
+            });
+        }
+        await Avisos.AnunciarLogros(this);
         await _lienzo.ScaleToAsync(1.03, 120);
         await _lienzo.ScaleToAsync(1.0, 120);
     }
@@ -375,7 +425,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
     private async void Quitar(object? sender, EventArgs e)
     {
         bool si = await DisplayAlertAsync("Quitar árbol",
-            $"Se borra {_vista.Nombre} del jardín. Tus logros se quedan.", "Quitar", "Cancelar");
+            $"Se quita el {_vista.Especie.ToLower(Tema.Cultura)} del jardín. Tus logros se quedan.", "Quitar", "Cancelar");
         if (!si) return;
         try
         {

@@ -16,6 +16,8 @@ public sealed class JardinPage : ContentPage, IRefrescable
     private readonly Label _fecha = Tema.Texto("", 15, color: Tema.HuesoTenue);
     private readonly Label _aviso = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
     private bool _navegando;
+    private IDispatcherTimer? _timer;
+    private DateOnly _hoyMostrado;
 
     public JardinPage()
     {
@@ -23,8 +25,13 @@ public sealed class JardinPage : ContentPage, IRefrescable
         BackgroundColor = Tema.Musgo;
         NavigationPage.SetHasNavigationBar(this, false);
 
-        var logros = Tema.Boton("Ver logros", Tema.MusgoClaro, Tema.Hueso);
-        logros.Clicked += async (_, _) => await Abrir(() => new LogrosPage());
+        // Solo un trofeo: nada dice qué hay adentro.
+        var logros = Tema.Boton("🏆", Tema.MusgoClaro, Tema.Hueso);
+        logros.FontSize = 26;
+        logros.HorizontalOptions = LayoutOptions.Center;
+        logros.WidthRequest = 72;
+        SemanticProperties.SetDescription(logros, "Estante de trofeos");
+        logros.Clicked += async (_, _) => await AbrirEstante();
 
         Content = new ScrollView
         {
@@ -80,6 +87,17 @@ public sealed class JardinPage : ContentPage, IRefrescable
     {
         base.OnAppearing();
         AlVolver();
+        // Si la pantalla queda abierta al pasar la medianoche, se relee sola.
+        _timer = Dispatcher.CreateTimer();
+        _timer.Interval = TimeSpan.FromSeconds(20);
+        _timer.Tick += (_, _) => { if (Servicios.Jardin.Hoy != _hoyMostrado) AlVolver(); };
+        _timer.Start();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _timer?.Stop();
     }
 
     /// <summary>Abre una página una sola vez aunque el toque llegue doble.</summary>
@@ -91,19 +109,26 @@ public sealed class JardinPage : ContentPage, IRefrescable
         finally { _navegando = false; }
     }
 
+    private async Task AbrirEstante()
+    {
+        if (_navegando) return;
+        var r = await Bloqueo.PedirAsync();
+        if (r == Bloqueo.Resultado.Cancelado) return;
+        if (r == Bloqueo.Resultado.SinBloqueo)
+        {
+            await DisplayAlertAsync("Tu teléfono no tiene bloqueo",
+                "Para que nadie más vea tu estante, activa un PIN, patrón o huella en los ajustes del teléfono.", "Entendido");
+        }
+        await Abrir(() => new LogrosPage());
+    }
+
     public async void AlVolver()
     {
         try
         {
             var jardin = Servicios.Jardin;
-            var nuevos = jardin.Refrescar();
             Pintar(jardin.Jardin(), jardin.Hoy);
-
-            foreach (var logro in nuevos)
-            {
-                var info = LogroInfo.De(logro);
-                await DisplayAlertAsync($"Logro: {info.Nombre}", info.Descripcion, "Seguir");
-            }
+            await Avisos.AnunciarLogros(this);
         }
         catch (Exception ex)
         {
@@ -113,6 +138,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
 
     private void Pintar(IReadOnlyList<VistaArbol> arboles, DateOnly hoy)
     {
+        _hoyMostrado = hoy;
         _fecha.Text = char.ToUpper(Tema.Fecha(hoy)[0]) + Tema.Fecha(hoy)[1..];
         int pendientes = arboles.Count(a => a.PideCheckInHoy);
         _aviso.Text = pendientes switch
@@ -141,9 +167,11 @@ public sealed class JardinPage : ContentPage, IRefrescable
         var dibujo = new GraphicsView { Drawable = new ArbolPequeno(EstadoArbol.De(v)), HeightRequest = 130, InputTransparent = true };
         var estado = v switch
         {
+            { MiniEvento: not MiniEvento.Ninguno } => "¡Necesita ayuda!",
             { EsCheatDayHoy: true } => "Día libre",
-            { Penalizacion: PenaltyLevel.Strike2 } => "Raíces podridas",
-            { Penalizacion: PenaltyLevel.Strike1 } => "Con plaga",
+            { Raices: true } => "Raíces podridas",
+            { Plaga: true } => "Con plaga",
+            { DiasSinVisita: > 0 } => $"En pausa, día {v.Dias}",
             _ => $"Día {v.Dias}, {Tema.NombreEtapa(v.Etapa).ToLower(Tema.Cultura)}",
         };
 
@@ -154,7 +182,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         pie.Add(new VerticalStackLayout
         {
             Spacing = 0,
-            Children = { Tema.Texto(v.Nombre, 16, Tema.FuenteNegrita), Tema.Texto(estado, 13, color: Tema.HuesoTenue) },
+            Children = { Tema.Texto(v.Especie, 16, Tema.FuenteNegrita), Tema.Texto(estado, 13, color: Tema.HuesoTenue) },
         });
         if (v.PideCheckInHoy)
         {
@@ -162,7 +190,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         }
 
         var parcela = Tema.Parcela(new VerticalStackLayout { Spacing = 6, Children = { dibujo, pie } });
-        SemanticProperties.SetDescription(parcela, $"{v.Nombre}. {estado}.");
+        SemanticProperties.SetDescription(parcela, $"{v.Especie}. {estado}.");
         var toque = new TapGestureRecognizer();
         toque.Tapped += async (_, _) => await Abrir(() => new ArbolPage(v.Id));
         parcela.GestureRecognizers.Add(toque);
@@ -179,7 +207,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
             {
                 Tema.Texto("+", 40, Tema.FuenteTitulo, Tema.Hoja),
                 Tema.Texto(primera ? "Planta tu primer árbol" : "Plantar otro árbol", 15, Tema.FuenteNegrita),
-                Tema.Texto("Un árbol por cada hábito que quieras dejar.", 13, color: Tema.HuesoTenue),
+                Tema.Texto("Un árbol por cada hábito que quieras dejar. Solo tú sabrás cuál es cuál.", 13, color: Tema.HuesoTenue),
             },
         };
         var parcela = Tema.Parcela(contenido, Colors.Transparent, Tema.MusgoClaro);

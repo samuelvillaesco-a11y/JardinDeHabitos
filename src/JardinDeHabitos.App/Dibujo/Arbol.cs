@@ -13,6 +13,10 @@ public static class Especies
         ("Cerezo", Color.FromArgb("#A3263A")),
         ("Durazno", Color.FromArgb("#F2A65A")),
         ("Higuera", Color.FromArgb("#7A4466")),
+        ("Aguacate", Color.FromArgb("#5C7A29")),
+        ("Mango", Color.FromArgb("#F5B335")),
+        ("Granado", Color.FromArgb("#B0283C")),
+        ("Olivo", Color.FromArgb("#4B3B47")),
     ];
 
     public static Color ColorFruta(string especie) =>
@@ -34,9 +38,10 @@ public sealed class EstadoArbol
     {
         Etapa = v.Etapa,
         Especie = v.Especie,
-        Cicatrices = v.Cicatrices,
-        Plaga = v.Penalizacion != PenaltyLevel.Ninguna && !v.TratadoHoy,
-        RaicesPodridas = v.Penalizacion == PenaltyLevel.Strike2 && !v.TratadoHoy,
+        Cicatrices = v.Strikes + v.StrikesAbandono,
+        // Un caracol o una rama seca se ven como una plaga pequeña: llaman la atención.
+        Plaga = (v.Plaga && !v.TratadoHoy) || v.MiniEvento != MiniEvento.Ninguno,
+        RaicesPodridas = v.Raices && !v.TratadoHoy,
         EnPaz = v.EsCheatDayHoy,
         Regado = v.RegadoHoy,
     };

@@ -17,6 +17,6 @@ public class MainActivity : MauiAppCompatActivity
         {
             RequestPermissions([Manifest.Permission.PostNotifications], 1);
         }
-        AvisoCheatDay.Programar(this);
+        Notificaciones.Programar(this);
     }
 }

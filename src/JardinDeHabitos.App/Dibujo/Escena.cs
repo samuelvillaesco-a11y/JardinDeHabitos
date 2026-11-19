@@ -16,7 +16,7 @@ public enum MiniJuego
 /// </summary>
 public sealed class Escena : IDrawable
 {
-    private const float SegundosDeRiego = 1.6f;
+    private const float SegundosDeRiegoBase = 1.6f;
 
     private sealed class Raiz
     {
@@ -46,6 +46,18 @@ public sealed class Escena : IDrawable
     public EstadoArbol Arbol { get; set; } = new();
     public MiniJuego Juego { get; private set; }
 
+    /// <summary>Efectos de logros malditos: más bichos, tierra que se seca, más ramas, raíces tercas.</summary>
+    public IReadOnlySet<Debuff> Debuffs { get; set; } = new HashSet<Debuff>();
+
+    /// <summary>Juego corto de emergencia (mini-evento): pocas piezas, se resuelve en segundos.</summary>
+    public bool Rescate { get; private set; }
+
+    /// <summary>Piezas quitadas en el juego actual (bichos, raíces o ramas).</summary>
+    public int Piezas { get; private set; }
+
+    private float SegundosDeRiego =>
+        Rescate ? 0.6f : SegundosDeRiegoBase * (Debuffs.Contains(Debuff.TierraSeca) ? 1.6f : 1f);
+
     /// <summary>Se llama cuando el mini-juego en curso se completa.</summary>
     public event Action<MiniJuego>? Completado;
 
@@ -59,9 +71,11 @@ public sealed class Escena : IDrawable
         _ => "",
     };
 
-    public void Iniciar(MiniJuego juego)
+    public void Iniciar(MiniJuego juego, bool rescate = false)
     {
         Juego = juego;
+        Rescate = rescate;
+        Piezas = 0;
         _pendienteIniciar = true;
         _bichos.Clear();
         _raices.Clear();
@@ -170,6 +184,7 @@ public sealed class Escena : IDrawable
                 if (!float.IsNaN(bicho.X))
                 {
                     _bichos.Remove(bicho);
+                    Piezas++;
                     if (_bichos.Count == 0) Terminar();
                 }
                 break;
@@ -199,6 +214,7 @@ public sealed class Escena : IDrawable
             case MiniJuego.Podar when _ultimoToque is { } antes:
                 _cortes.Add((antes, p));
                 int cortadas = _ramas.RemoveAll(r => SeCruzan(antes, p, r.A, r.B));
+                Piezas += cortadas;
                 if (cortadas > 0 && _ramas.Count == 0) Terminar();
                 break;
         }
@@ -210,10 +226,13 @@ public sealed class Escena : IDrawable
         var g = Geometria;
         if (Juego == MiniJuego.Raices && _raizAgarrada is { } r)
         {
-            bool fuera = r.Pos.Y < g.Suelo - g.Escala * 0.10f || Distancia(r.Pos, r.Origen) > g.Escala * 0.30f;
+            // Raíces tercas: hay que jalarlas más lejos.
+            float tirón = Debuffs.Contains(Debuff.RaicesTercas) ? 1.5f : 1f;
+            bool fuera = r.Pos.Y < g.Suelo - g.Escala * 0.10f * tirón || Distancia(r.Pos, r.Origen) > g.Escala * 0.30f * tirón;
             if (fuera)
             {
                 _raices.Remove(r);
+                Piezas++;
                 if (_raices.Count == 0) Terminar();
             }
             else
@@ -239,11 +258,15 @@ public sealed class Escena : IDrawable
         switch (Juego)
         {
             case MiniJuego.Plaga:
-                foreach (var p in Dibujo.Arbol.PosicionesPlaga)
+                IEnumerable<PointF> posiciones = Rescate
+                    ? Dibujo.Arbol.PosicionesPlaga.Take(2)
+                    : Debuffs.Contains(Debuff.MasBichos) ? [.. Dibujo.Arbol.PosicionesPlaga, .. BichosExtra] : Dibujo.Arbol.PosicionesPlaga;
+                foreach (var p in posiciones)
                     _bichos.Add(new PointF(z.X + z.Width * p.X, z.Y + z.Height * p.Y));
                 break;
             case MiniJuego.Raices:
-                foreach (var dx in new[] { -0.18f, 0f, 0.18f })
+                float[] xs = Debuffs.Contains(Debuff.RaicesTercas) ? [-0.24f, -0.12f, 0f, 0.12f, 0.24f] : [-0.18f, 0f, 0.18f];
+                foreach (var dx in xs)
                 {
                     var o = new PointF(g.CentroX + s * dx, g.Suelo + s * 0.06f);
                     _raices.Add(new Raiz { Origen = o, Pos = o });
@@ -256,19 +279,29 @@ public sealed class Escena : IDrawable
                     _ramas.Add((new PointF(z.Left + z.Width * 0.08f, z.Center.Y), new PointF(z.Left - s * 0.12f, z.Center.Y - s * 0.06f)));
                     _ramas.Add((new PointF(z.Right - z.Width * 0.08f, z.Center.Y + z.Height * 0.1f), new PointF(z.Right + s * 0.12f, z.Center.Y - s * 0.02f)));
                     _ramas.Add((new PointF(z.Center.X + z.Width * 0.1f, z.Top + z.Height * 0.08f), new PointF(z.Center.X + s * 0.06f, z.Top - s * 0.10f)));
+                    if (Debuffs.Contains(Debuff.MasRamas) && !Rescate)
+                    {
+                        _ramas.Add((new PointF(z.Left + z.Width * 0.15f, z.Top + z.Height * 0.3f), new PointF(z.Left - s * 0.08f, z.Top - s * 0.02f)));
+                        _ramas.Add((new PointF(z.Right - z.Width * 0.15f, z.Bottom - z.Height * 0.2f), new PointF(z.Right + s * 0.10f, z.Bottom + s * 0.02f)));
+                    }
                 }
                 else
                 {
                     // Planta pequeña: se quitan hierbas alrededor.
-                    foreach (var dx in new[] { -0.26f, 0.22f, 0.32f })
+                    float[] hierbas = Debuffs.Contains(Debuff.MasRamas) && !Rescate ? [-0.34f, -0.26f, 0.12f, 0.22f, 0.32f] : [-0.26f, 0.22f, 0.32f];
+                    foreach (var dx in hierbas)
                         _ramas.Add((new PointF(g.CentroX + s * dx, g.Suelo), new PointF(g.CentroX + s * (dx + 0.02f), g.Suelo - s * 0.10f)));
                 }
+                // Una rama seca de emergencia: un solo corte.
+                if (Rescate && _ramas.Count > 1) _ramas.RemoveRange(1, _ramas.Count - 1);
                 break;
             case MiniJuego.Regar:
                 _regadera = new PointF(_rect.Left + s * 0.16f, _rect.Bottom - s * 0.14f);
                 break;
         }
     }
+
+    private static readonly PointF[] BichosExtra = [new(0.18f, 0.55f), new(0.60f, 0.48f), new(0.46f, 0.22f)];
 
     private void Terminar()
     {
