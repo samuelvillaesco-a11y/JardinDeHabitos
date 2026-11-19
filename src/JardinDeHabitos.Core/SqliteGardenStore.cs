@@ -5,14 +5,45 @@ namespace JardinDeHabitos.Core;
 /// <summary>Persistencia local en SQLite. Fechas guardadas como DayNumber.</summary>
 public sealed class SqliteGardenStore : IGardenStore, IDisposable
 {
+    /// <summary>Versión del esquema que entiende este código (PRAGMA user_version).</summary>
+    public const int VersionActual = 1;
+
     private readonly SQLiteConnection _db;
 
     public SqliteGardenStore(string rutaArchivo)
     {
         _db = new SQLiteConnection(rutaArchivo);
-        _db.CreateTable<HabitoFila>();
-        _db.CreateTable<LogroFila>();
+        try
+        {
+            Migrar();
+        }
+        catch
+        {
+            _db.Dispose();
+            throw;
+        }
     }
+
+    public int VersionEsquema => _db.ExecuteScalar<int>("PRAGMA user_version");
+
+    /// <summary>Lleva la base a <see cref="VersionActual"/>. Cada versión nueva agrega un paso aquí.</summary>
+    private void Migrar()
+    {
+        int version = VersionEsquema;
+        if (version > VersionActual)
+            throw new InvalidOperationException(
+                $"La base de datos es de una versión más nueva de la app ({version}). Actualiza la app.");
+
+        _db.RunInTransaction(() =>
+        {
+            // 0 → 1: tablas iniciales (las bases sin versión ya las tienen; CreateTable no borra datos).
+            _db.CreateTable<HabitoFila>();
+            _db.CreateTable<LogroFila>();
+            _db.Execute($"PRAGMA user_version = {VersionActual}");
+        });
+    }
+
+    public void EnTransaccion(Action accion) => _db.RunInTransaction(accion);
 
     public IReadOnlyList<HabitRecord> Cargar() =>
         [.. _db.Table<HabitoFila>().OrderBy(f => f.Orden).ToList().Select(AHabitRecord)];

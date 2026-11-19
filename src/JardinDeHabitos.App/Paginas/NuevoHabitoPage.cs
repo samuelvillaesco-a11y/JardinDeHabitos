@@ -27,6 +27,7 @@ public sealed class NuevoHabitoPage : ContentPage
     private readonly VerticalStackLayout _seccionDias;
     private readonly Label _ayudaTipo = Tema.Texto("", 14, color: Tema.HuesoTenue);
     private readonly Label _error = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
+    private bool _plantando;
 
     public NuevoHabitoPage()
     {
@@ -84,6 +85,9 @@ public sealed class NuevoHabitoPage : ContentPage
 
     private async void Plantar(object? sender, EventArgs e)
     {
+        // Un doble toque no debe plantar dos árboles.
+        if (_plantando) return;
+        _plantando = true;
         try
         {
             var tipo = _tipo.Elegido;
@@ -94,6 +98,7 @@ public sealed class NuevoHabitoPage : ContentPage
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             _error.Text = ex.Message;
+            _plantando = false;
         }
     }
 }

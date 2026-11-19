@@ -61,6 +61,13 @@ public class AvisoCheatDayReceiver : BroadcastReceiver
 {
     public override void OnReceive(Context? context, Intent? intent)
     {
+        // Un fallo aquí (base ocupada o dañada) no debe cerrar la app en segundo plano.
+        try { Avisar(context); }
+        catch (Exception ex) { Android.Util.Log.Warn("JardinDeHabitos", $"Aviso de día libre falló: {ex}"); }
+    }
+
+    private static void Avisar(Context? context)
+    {
         if (context?.FilesDir?.AbsolutePath is not { } dir) return;
         var ruta = Path.Combine(dir, Servicios.NombreBaseDeDatos);
         if (!File.Exists(ruta)) return;
@@ -75,5 +82,18 @@ public class AvisoCheatDayReceiver : BroadcastReceiver
 
         AvisoCheatDay.Mostrar(context, "Hoy es día libre",
             $"Día libre de {string.Join(" y ", libres)}. Disfrútalo con moderación: un día libre no es un día sin medida.");
+    }
+}
+
+/// <summary>Android borra las alarmas al reiniciar: se vuelven a programar al encender.</summary>
+[BroadcastReceiver(Enabled = true, Exported = true)]
+[IntentFilter([Intent.ActionBootCompleted])]
+public class ReprogramarAvisoReceiver : BroadcastReceiver
+{
+    public override void OnReceive(Context? context, Intent? intent)
+    {
+        if (context is null || intent?.Action != Intent.ActionBootCompleted) return;
+        try { AvisoCheatDay.Programar(context); }
+        catch (Exception ex) { Android.Util.Log.Warn("JardinDeHabitos", $"Reprogramar aviso falló: {ex}"); }
     }
 }

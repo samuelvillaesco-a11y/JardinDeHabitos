@@ -13,7 +13,9 @@ public sealed class ArbolPage : ContentPage, IRefrescable
     private IDispatcherTimer? _timer;
     private VistaArbol _vista = null!;
     private DateOnly _hoyMostrado;
-    private int _ticks;
+    private bool _checkInEnCurso;
+    private static readonly TimeSpan Rapido = TimeSpan.FromMilliseconds(33);
+    private static readonly TimeSpan Lento = TimeSpan.FromSeconds(1);
 
     private readonly Label _titulo = Tema.Titulo("", 30);
     private readonly Label _etapa = Tema.Texto("", 16, Tema.FuenteNegrita, Tema.Hoja);
@@ -72,13 +74,22 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         base.OnAppearing();
         Refrescar();
         _timer = Dispatcher.CreateTimer();
-        _timer.Interval = TimeSpan.FromMilliseconds(33);
+        _timer.Interval = Lento;
         _timer.Tick += (_, _) =>
         {
-            if (_escena.Tick(0.033f) || _escena.Juego != MiniJuego.Ninguno) Repintar();
-            // Una vez por segundo: si cambió el día con la página abierta, releer.
-            if (++_ticks % 30 == 0 && _escena.Juego == MiniJuego.Ninguno && Servicios.Jardin.Hoy != _hoyMostrado)
+            // 30 Hz solo durante un mini-juego; si no, un tic por segundo para ver si cambió el día.
+            bool jugando = _escena.Juego != MiniJuego.Ninguno;
+            if (jugando)
+            {
+                _escena.Tick(0.033f);
+                Repintar();
+            }
+            else if (Servicios.Jardin.Hoy != _hoyMostrado)
+            {
                 AlVolver();
+            }
+            var intervalo = _escena.Juego != MiniJuego.Ninguno ? Rapido : Lento;
+            if (_timer.Interval != intervalo) _timer.Interval = intervalo;
         };
         _timer.Start();
     }
@@ -270,6 +281,15 @@ public sealed class ArbolPage : ContentPage, IRefrescable
 
     private async Task HacerCheckIn(CheckInResult resultado)
     {
+        // Un doble toque no debe mandar dos check-ins.
+        if (_checkInEnCurso) return;
+        _checkInEnCurso = true;
+        try { await HacerCheckInUnaVez(resultado); }
+        finally { _checkInEnCurso = false; }
+    }
+
+    private async Task HacerCheckInUnaVez(CheckInResult resultado)
+    {
         if (resultado == CheckInResult.Roto)
         {
             bool seguro = await DisplayAlertAsync("¿Lo rompiste hoy?",
@@ -293,7 +313,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         if (o.ArbolMurio)
         {
             await DisplayAlertAsync("El árbol murió",
-                "Tres días rotos seguidos. Todo vuelve a empezar desde una semilla. Puedes volver a intentarlo hoy mismo.",
+                "Tres días rotos seguidos. Todo vuelve a empezar: hoy queda plantada una semilla nueva. Mañana haces su primer check-in.",
                 "Plantar de nuevo");
         }
         else if (resultado == CheckInResult.Roto)
@@ -315,6 +335,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
     private void Jugar(MiniJuego juego)
     {
         _escena.Iniciar(juego);
+        if (_timer is not null) _timer.Interval = Rapido;
         Refrescar();
     }
 

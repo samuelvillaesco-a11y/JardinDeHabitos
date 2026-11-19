@@ -69,15 +69,19 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
     {
         var r = Buscar(id);
         var outcome = _procesador.Procesar(r.Habito, r.Estado, resultado);
-        store.Guardar(r);
 
+        // Árbol y logros juntos: si el árbol legendario muere sin guardar LeyendaCaida, el logro se perdería para siempre.
         var nuevos = new List<Logro>();
-        if (outcome.LeyendaCaida)
+        store.EnTransaccion(() =>
         {
-            // Un árbol legendario que muere también cuenta como haber llegado a legendario.
-            Desbloquear(Logro.FrutaLegendaria, r.Habito.Nombre, nuevos);
-            Desbloquear(Logro.LeyendaCaida, r.Habito.Nombre, nuevos);
-        }
+            store.Guardar(r);
+            if (outcome.LeyendaCaida)
+            {
+                // Un árbol legendario que muere también cuenta como haber llegado a legendario.
+                Desbloquear(Logro.FrutaLegendaria, r.Habito.Nombre, nuevos);
+                Desbloquear(Logro.LeyendaCaida, r.Habito.Nombre, nuevos);
+            }
+        });
         return new ResultadoCheckIn(outcome, nuevos);
     }
 

@@ -66,7 +66,8 @@ Hecho (todo commiteado, 79/79 tests Core verdes):
 
 Pendiente (en este orden):
 1. ~~Probar en emulador refresco al volver y `Intentar(...)`~~ (hecho 2026-11-18: jardín y árbol se releen al cambiar de día en segundo plano; doble toque en check-in no cierra la app).
-2. Menores diferidos de la revisión: doble toque crea duplicados; LeyendaCaida sin transacción SQLite; receptor de aviso sin try/catch; aviso no se reprograma tras reinicio; sin versión de esquema SQLite; diálogo de muerte dice "hoy mismo" (es mañana); timer 30 Hz siempre activo; sin modo acelerado en la app.
+2. ~~Menores diferidos~~ (hecho 2026-11-18, probado en emulador): doble toque ya no duplica (navegar, plantar, check-in); check-in + logros en una transacción SQLite (`IGardenStore.EnTransaccion`); esquema versionado con `PRAGMA user_version` (`SqliteGardenStore.VersionActual = 1`, cada cambio de esquema agrega un paso en `Migrar()`; base más nueva que la app lanza error); receptor de aviso con try/catch; aviso se reprograma al encender (`ReprogramarAvisoReceiver`, permiso `RECEIVE_BOOT_COMPLETED`); texto de muerte corregido; timer del árbol a 1 Hz y 30 Hz solo durante mini-juego. 84/84 tests.
+   - Sigue pendiente: modo acelerado dentro de la app (decidir si se quiere, p. ej. solo en Debug).
 3. Merge de `fase1/app` a `main` y decidir si se instala el APK en el teléfono.
 
 ## Siguiente paso

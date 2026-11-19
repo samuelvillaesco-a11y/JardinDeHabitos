@@ -15,6 +15,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
     };
     private readonly Label _fecha = Tema.Texto("", 15, color: Tema.HuesoTenue);
     private readonly Label _aviso = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
+    private bool _navegando;
 
     public JardinPage()
     {
@@ -23,7 +24,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         NavigationPage.SetHasNavigationBar(this, false);
 
         var logros = Tema.Boton("Ver logros", Tema.MusgoClaro, Tema.Hueso);
-        logros.Clicked += async (_, _) => await Navigation.PushAsync(new LogrosPage());
+        logros.Clicked += async (_, _) => await Abrir(() => new LogrosPage());
 
         Content = new ScrollView
         {
@@ -50,7 +51,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
     private Button BotonGaleria()
     {
         var b = Tema.Boton("Galería de etapas (debug)", Colors.Transparent, Tema.HuesoTenue);
-        b.Clicked += async (_, _) => await Navigation.PushAsync(new GaleriaPage());
+        b.Clicked += async (_, _) => await Abrir(() => new GaleriaPage());
         return b;
     }
 #endif
@@ -59,6 +60,15 @@ public sealed class JardinPage : ContentPage, IRefrescable
     {
         base.OnAppearing();
         AlVolver();
+    }
+
+    /// <summary>Abre una página una sola vez aunque el toque llegue doble.</summary>
+    private async Task Abrir(Func<Page> crear)
+    {
+        if (_navegando || Navigation.NavigationStack.LastOrDefault() != this) return;
+        _navegando = true;
+        try { await Navigation.PushAsync(crear()); }
+        finally { _navegando = false; }
     }
 
     public async void AlVolver()
@@ -134,7 +144,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         var parcela = Tema.Parcela(new VerticalStackLayout { Spacing = 6, Children = { dibujo, pie } });
         SemanticProperties.SetDescription(parcela, $"{v.Nombre}. {estado}.");
         var toque = new TapGestureRecognizer();
-        toque.Tapped += async (_, _) => await Navigation.PushAsync(new ArbolPage(v.Id));
+        toque.Tapped += async (_, _) => await Abrir(() => new ArbolPage(v.Id));
         parcela.GestureRecognizers.Add(toque);
         return parcela;
     }
@@ -155,7 +165,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         var parcela = Tema.Parcela(contenido, Colors.Transparent, Tema.MusgoClaro);
         parcela.MinimumHeightRequest = 190;
         var toque = new TapGestureRecognizer();
-        toque.Tapped += async (_, _) => await Navigation.PushAsync(new NuevoHabitoPage());
+        toque.Tapped += async (_, _) => await Abrir(() => new NuevoHabitoPage());
         parcela.GestureRecognizers.Add(toque);
         return parcela;
     }
