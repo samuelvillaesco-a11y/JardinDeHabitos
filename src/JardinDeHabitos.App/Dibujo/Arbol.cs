@@ -165,9 +165,13 @@ public static class Arbol
 
     private static void Paz(ICanvas c, GeometriaArbol g)
     {
+        // Halo cálido y difuso: el árbol descansa en paz.
         var z = g.Zona;
-        c.Relleno(Tema.Miel.WithAlpha(0.10f));
-        c.FillEllipse(z.X - z.Width * 0.25f, z.Y - z.Height * 0.25f, z.Width * 1.5f, z.Height * 1.5f);
+        var area = new RectF(z.X - z.Width * 0.2f, z.Y - z.Height * 0.2f, z.Width * 1.4f, z.Height * 1.4f);
+        c.SetFillPaint(new RadialGradientPaint(
+            [new PaintGradientStop(0, Tema.Miel.WithAlpha(0.28f)), new PaintGradientStop(1, Tema.Miel.WithAlpha(0f))],
+            new Point(0.5, 0.5), 0.5), area);
+        c.FillEllipse(area);
     }
 
     private static void Resplandor(ICanvas c, GeometriaArbol g)
