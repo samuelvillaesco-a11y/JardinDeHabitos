@@ -70,6 +70,17 @@ Pendiente (en este orden):
    - Modo acelerado (solo Debug): botón en el jardín, 1 día = 1 min, base aparte `jardin-acelerado.db3` que se borra al encender; ancla guardada en Preferences (`RelojAcelerado` acepta `ancla`), así el tiempo sigue tras reiniciar. Release no lo incluye.
 3. ~~Merge a `main` e instalar en el teléfono~~ (hecho 2026-11-18: `main` fast-forward; APK Release instalado y abierto en el teléfono). Firmado con la llave debug de .NET (`~/.local/share/Xamarin/Mono for Android/debug.keystore`): las actualizaciones futuras deben firmarse con la misma llave o habrá que desinstalar (y se pierden los datos).
 
+## Pruebas preliminares 2026-11-19 (emulador, modo acelerado, 4 árboles, ~30 días simulados)
+
+Funciona sin cierres: plantar (2 tipos, límite de 2 días libres), check-in, plaga → raíces → muerte, mini-juegos (bichos, raíces, regar, podar), día libre, edición del sábado, refresco del árbol al cambiar de día.
+
+Hallazgos (pendientes):
+1. IMPORTANTE: los árboles crecen aunque no se haga check-in (Alcohol llegó a flor sin ningún check-in tras morir). Es la decisión pendiente de "días sin check-in".
+2. El error de nombre vacío muestra texto técnico: "(Parameter 'nombre')".
+3. La pantalla del jardín no cambia de fecha si se queda abierta al pasar la medianoche (la del árbol sí).
+4. Solo hay un logro visible (Fruta Legendaria, a 1 año): falta motivación temprana.
+5. Elegir un 3.º día libre quita el primero sin avisar (aceptable, pero puede confundir).
+
 ## Siguiente paso
 
 1. ~~Clase que calcula `GrowthStage` + modo acelerado~~ (hecho).
