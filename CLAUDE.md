@@ -96,3 +96,4 @@ Estante de emblemas (commit 0b4bfa8): bronce/plata/oro según estrellas, maldito
 Probado también en modo acelerado: 8 días sin visita → "¡Necesita ayuda!" + caracoles; el rescate desbloquea el oculto "Rescate a tiempo" con aviso genérico.
 OJO: en el emulador la app PhoneBox (net.oxog.phonebox.deskpanel) puede pasar al frente y recibir los toques; el teléfono puede estar conectado por USB: usar siempre `adb -s emulator-5554`.
 
+Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 2026-11-19 con `adb install -r` del APK Release firmado (datos conservados, abre sin cierres).
