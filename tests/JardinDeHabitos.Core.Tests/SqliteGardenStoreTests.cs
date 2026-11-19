@@ -11,81 +11,76 @@ public sealed class SqliteGardenStoreTests : IDisposable
         if (File.Exists(_ruta)) File.Delete(_ruta);
     }
 
+    private static HabitRecord Registro() => new()
+    {
+        Habito = new Habit
+        {
+            Categoria = MalHabito.Azucares,
+            EspecieDeArbol = "Naranjo",
+            Tipo = HabitType.Moderable,
+            FechaDeInicioRachaActual = new DateOnly(2026, 1, 1),
+            DiasDeCrecimiento = 42,
+            ApoyoTerapia = true,
+            DiasDeCheat = [DayOfWeek.Saturday, DayOfWeek.Sunday],
+            DiasDeCheatAnteriores = [DayOfWeek.Wednesday],
+            CambioDeCheatDesde = new DateOnly(2026, 1, 4),
+        },
+        Estado = new StrikeState
+        {
+            StrikesDeclarados = 2,
+            StrikesAbandono = 1,
+            FinPlaga = new DateOnly(2026, 2, 1),
+            FinRaices = new DateOnly(2026, 2, 6),
+            FechaUltimoCheckIn = new DateOnly(2026, 1, 30),
+            FechaUltimoStrike = new DateOnly(2026, 1, 29),
+            DiasSinStrikeBase = 40,
+            FenixPendiente = true,
+            DiasNormalesSinCheckIn = 3,
+            UltimoDiaEvaluado = new DateOnly(2026, 1, 30),
+            MiniEvento = MiniEvento.RamaSeca,
+        },
+        UltimoRiego = new DateOnly(2026, 1, 29),
+        UltimoTratamiento = new DateOnly(2026, 1, 30),
+        UltimaAsistencia = new DateOnly(2026, 1, 28),
+        UltimoCumplido = new DateOnly(2026, 1, 27),
+        CuidadoPendiente = true,
+        TratamientosEnCuidado = 2,
+        ConstanciaActual = 5,
+        Orden = 3,
+    };
+
     [Fact]
     public void Guardar_YCargar_IdaYVuelta()
     {
-        var registro = new HabitRecord
-        {
-            Habito = new Habit
-            {
-                Nombre = "Azúcar",
-                EspecieDeArbol = "Naranjo",
-                Tipo = HabitType.Moderable,
-                FechaDeInicioRachaActual = new DateOnly(2026, 1, 1),
-                DiasDeCheat = [DayOfWeek.Saturday, DayOfWeek.Sunday],
-                DiasDeCheatAnteriores = [DayOfWeek.Wednesday],
-                CambioDeCheatDesde = new DateOnly(2026, 1, 4),
-            },
-            Estado = new StrikeState
-            {
-                RachaConsecutivaDeDiasRotos = 2,
-                StrikesTotalesDelArbolActual = 5,
-                NivelDePenalizacion = PenaltyLevel.Strike2,
-                FechaFinDePenalizacionActiva = new DateOnly(2026, 2, 3),
-                FechaUltimoCheckIn = new DateOnly(2026, 1, 30),
-            },
-            UltimoRiego = new DateOnly(2026, 1, 29),
-            UltimaPoda = null,
-            UltimoTratamiento = new DateOnly(2026, 1, 30),
-            Orden = 3,
-        };
-
+        var r = Registro();
         using (var store = new SqliteGardenStore(_ruta))
         {
-            store.Guardar(registro);
-            store.AgregarLogro(new LogroDesbloqueado(Logro.FrutaLegendaria, new DateOnly(2026, 1, 5), "Azúcar"));
+            store.Guardar(r);
+            store.GuardarEstadisticas(new Dictionary<string, int> { ["racha:Azucares"] = 42 });
+            store.AgregarNivel(new NivelLogro("hab.azucares.tiempo1", 2, new DateOnly(2026, 1, 5)));
         }
 
         using var otra = new SqliteGardenStore(_ruta);
-        var leido = Assert.Single(otra.Cargar());
+        var l = Assert.Single(otra.Cargar());
 
-        Assert.Equal(registro.Habito.Id, leido.Habito.Id);
-        Assert.Equal("Azúcar", leido.Habito.Nombre);
-        Assert.Equal("Naranjo", leido.Habito.EspecieDeArbol);
-        Assert.Equal(HabitType.Moderable, leido.Habito.Tipo);
-        Assert.Equal(new DateOnly(2026, 1, 1), leido.Habito.FechaDeInicioRachaActual);
-        Assert.Equal([DayOfWeek.Sunday, DayOfWeek.Saturday], leido.Habito.DiasDeCheat.Order());
-        Assert.Equal([DayOfWeek.Wednesday], leido.Habito.DiasDeCheatAnteriores);
-        Assert.Equal(new DateOnly(2026, 1, 4), leido.Habito.CambioDeCheatDesde);
-        Assert.Equal(2, leido.Estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(5, leido.Estado.StrikesTotalesDelArbolActual);
-        Assert.Equal(PenaltyLevel.Strike2, leido.Estado.NivelDePenalizacion);
-        Assert.Equal(new DateOnly(2026, 2, 3), leido.Estado.FechaFinDePenalizacionActiva);
-        Assert.Equal(new DateOnly(2026, 1, 30), leido.Estado.FechaUltimoCheckIn);
-        Assert.Equal(new DateOnly(2026, 1, 29), leido.UltimoRiego);
-        Assert.Null(leido.UltimaPoda);
-        Assert.Equal(new DateOnly(2026, 1, 30), leido.UltimoTratamiento);
-        Assert.Equal(3, leido.Orden);
-
-        var logro = Assert.Single(otra.Logros());
-        Assert.Equal(Logro.FrutaLegendaria, logro.Logro);
-        Assert.Equal("Azúcar", logro.Habito);
+        Assert.Equivalent(r.Habito, l.Habito);
+        Assert.Equivalent(r.Estado, l.Estado);
+        Assert.Equal(r.UltimaAsistencia, l.UltimaAsistencia);
+        Assert.Equal(r.UltimoCumplido, l.UltimoCumplido);
+        Assert.True(l.CuidadoPendiente);
+        Assert.Equal(2, l.TratamientosEnCuidado);
+        Assert.Equal(5, l.ConstanciaActual);
+        Assert.Equal(3, l.Orden);
+        Assert.Equal(42, otra.Estadisticas()["racha:Azucares"]);
+        Assert.Equal(new NivelLogro("hab.azucares.tiempo1", 2, new DateOnly(2026, 1, 5)), Assert.Single(otra.NivelesLogro()));
     }
 
     [Fact]
-    public void Guardar_DosVeces_Actualiza_YEliminar_Borra()
+    public void Eliminar_Borra()
     {
         using var store = new SqliteGardenStore(_ruta);
-        var r = new HabitRecord
-        {
-            Habito = new Habit { Nombre = "A", EspecieDeArbol = "Limonero", Tipo = HabitType.AbstinenciaTotal },
-        };
+        var r = Registro();
         store.Guardar(r);
-        r.Habito.Nombre = "B";
-        store.Guardar(r);
-
-        Assert.Equal("B", Assert.Single(store.Cargar()).Habito.Nombre);
-
         store.Eliminar(r.Habito.Id);
         Assert.Empty(store.Cargar());
     }
@@ -94,62 +89,46 @@ public sealed class SqliteGardenStoreTests : IDisposable
     public void EnTransaccion_SiFalla_NoQuedaNadaGuardado()
     {
         using var store = new SqliteGardenStore(_ruta);
-        var r = new HabitRecord
-        {
-            Habito = new Habit { Nombre = "A", EspecieDeArbol = "Limonero", Tipo = HabitType.AbstinenciaTotal },
-        };
 
         Assert.Throws<IOException>(() => store.EnTransaccion(() =>
         {
-            store.Guardar(r);
-            store.AgregarLogro(new LogroDesbloqueado(Logro.FrutaLegendaria, new DateOnly(2026, 1, 1), "A"));
+            store.Guardar(Registro());
+            store.AgregarNivel(new NivelLogro("gen.semilla", 1, new DateOnly(2026, 1, 1)));
+            store.EnTransaccion(() => store.GuardarEstadisticas(new Dictionary<string, int> { ["x"] = 1 }));
             throw new IOException("disco lleno");
         }));
 
         Assert.Empty(store.Cargar());
-        Assert.Empty(store.Logros());
+        Assert.Empty(store.NivelesLogro());
+        Assert.Empty(store.Estadisticas());
     }
 
     [Fact]
-    public void MuerteLegendaria_SiFallaGuardarElLogro_ElArbolNoMuere()
+    public void Servicio_SobreSqlite_FuncionaDeIdaYVuelta()
     {
         var reloj = new RelojFijo(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
-        using var sqlite = new SqliteGardenStore(_ruta);
-        var store = new StoreQueFallaEnLeyenda(sqlite);
-        var svc = new GardenService(store, new GrowthStageCalculator(reloj));
-        var v = svc.CrearHabito("Cigarro", "Manzano", HabitType.AbstinenciaTotal, []);
-        reloj.Ahora = reloj.Ahora.AddDays(400);
-        svc.CheckIn(v.Id, CheckInResult.Roto);
-        reloj.Ahora = reloj.Ahora.AddDays(1);
-        svc.CheckIn(v.Id, CheckInResult.Roto);
-        reloj.Ahora = reloj.Ahora.AddDays(1);
+        Guid id;
+        using (var store = new SqliteGardenStore(_ruta))
+        {
+            var svc = new GardenService(store, new GrowthStageCalculator(reloj));
+            id = svc.CrearHabito(MalHabito.Cigarro, "Manzano", HabitType.AbstinenciaTotal, []).Id;
+            svc.CheckIn(id, CheckInResult.Cumplido);
+            reloj.Ahora = reloj.Ahora.AddDays(15);
+            svc.Refrescar();
+        }
 
-        Assert.Throws<IOException>(() => svc.CheckIn(v.Id, CheckInResult.Roto));
-
-        // Todo o nada: el árbol sigue legendario y puede volver a intentarlo.
-        Assert.Equal(GrowthStage.FrutaLegendaria, svc.Jardin().Single().Etapa);
-        Assert.Empty(sqlite.Logros());
+        using var otra = new SqliteGardenStore(_ruta);
+        var v = new GardenService(otra, new GrowthStageCalculator(reloj)).Arbol(id);
+        Assert.Equal(1, v.Dias);
+        Assert.Equal(1, v.StrikesAbandono);
+        Assert.True(v.Plaga);
     }
 
     [Fact]
     public void BaseNueva_QuedaConLaVersionDeEsquemaActual()
     {
         using var store = new SqliteGardenStore(_ruta);
-
         Assert.Equal(SqliteGardenStore.VersionActual, store.VersionEsquema);
-    }
-
-    [Fact]
-    public void BaseSinVersion_SeActualiza_YConservaDatos()
-    {
-        using (var store = new SqliteGardenStore(_ruta))
-            store.Guardar(new HabitRecord { Habito = new Habit { Nombre = "A", EspecieDeArbol = "Limonero", Tipo = HabitType.AbstinenciaTotal } });
-        PonerVersion(0);
-
-        using var otra = new SqliteGardenStore(_ruta);
-
-        Assert.Equal(SqliteGardenStore.VersionActual, otra.VersionEsquema);
-        Assert.Equal("A", Assert.Single(otra.Cargar()).Habito.Nombre);
     }
 
     [Fact]
@@ -159,6 +138,61 @@ public sealed class SqliteGardenStoreTests : IDisposable
         PonerVersion(SqliteGardenStore.VersionActual + 1);
 
         Assert.Throws<InvalidOperationException>(() => new SqliteGardenStore(_ruta));
+    }
+
+    [Fact]
+    public void Sqlite_MigraV1()
+    {
+        CrearBaseV1();
+        var hoy = new DateOnly(2026, 1, 11);
+
+        using var store = new SqliteGardenStore(_ruta, hoy);
+
+        Assert.Equal(2, store.VersionEsquema);
+        var arboles = store.Cargar();
+        Assert.Equal(3, arboles.Count);
+
+        var cig = arboles.Single(a => a.Habito.Categoria == MalHabito.Cigarro);
+        Assert.Equal(10, cig.Habito.DiasDeCrecimiento);
+        Assert.Equal(2, cig.Estado.StrikesDeclarados); // 5 cicatrices, tope 2
+        Assert.Equal(new DateOnly(2026, 1, 13), cig.Estado.FinRaices);
+        Assert.Equal(hoy.AddDays(-1), cig.Estado.UltimoDiaEvaluado);
+
+        Assert.Contains(arboles, a => a.Habito.Categoria == MalHabito.Otros);
+        // Especies repetidas de v1 se conservan.
+        Assert.Equal(2, arboles.Count(a => a.Habito.EspecieDeArbol == "Manzano"));
+
+        var stats = store.Estadisticas();
+        Assert.Equal(1, stats["elegido:Cigarro"]);
+        Assert.Equal(1, stats[Stat.LeyendaCaida]);
+        Assert.Contains(store.NivelesLogro(), n => n.Id == "mal.leyenda_caida");
+
+        // Y el servicio funciona sobre la base migrada.
+        var reloj = new RelojFijo(new DateTimeOffset(hoy.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero));
+        var svc = new GardenService(store, new GrowthStageCalculator(reloj));
+        Assert.Equal(3, svc.Jardin().Count);
+        Assert.Contains(svc.Estante(), e => e.Def.Id == "mal.leyenda_caida" && e.Nivel == 1);
+    }
+
+    private void CrearBaseV1()
+    {
+        using var db = new SQLite.SQLiteConnection(_ruta);
+        db.Execute("""
+            CREATE TABLE Habitos (Id varchar primary key not null, Nombre varchar, Especie varchar, Tipo integer,
+              InicioRacha integer, DiasDeCheat integer, DiasDeCheatAnteriores integer, CambioDeCheatDesde integer,
+              Racha integer, Cicatrices integer, Nivel integer, FinPenalizacion integer, UltimoCheckIn integer,
+              UltimoRiego integer, UltimaPoda integer, UltimoTratamiento integer, Orden integer)
+            """);
+        db.Execute("CREATE TABLE Logros (Id integer primary key autoincrement not null, Logro integer, Fecha integer, Habito varchar)");
+        int inicio = new DateOnly(2026, 1, 1).DayNumber;
+        db.Execute("INSERT INTO Habitos VALUES (?, 'Cigarros', 'Manzano', 0, ?, 0, 0, NULL, 2, 5, 2, ?, ?, NULL, NULL, NULL, 0)",
+            Guid.NewGuid().ToString(), inicio, new DateOnly(2026, 1, 13).DayNumber, new DateOnly(2026, 1, 10).DayNumber);
+        db.Execute("INSERT INTO Habitos VALUES (?, 'Morderme las uñas', 'Manzano', 0, ?, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 1)",
+            Guid.NewGuid().ToString(), inicio);
+        db.Execute("INSERT INTO Habitos VALUES (?, 'Azúcar', 'Naranjo', 1, ?, 1, 0, NULL, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 2)",
+            Guid.NewGuid().ToString(), inicio);
+        db.Execute("INSERT INTO Logros (Logro, Fecha, Habito) VALUES (1, ?, 'Alcohol')", inicio);
+        db.Execute("PRAGMA user_version = 1");
     }
 
     private void PonerVersion(int version)
@@ -172,20 +206,5 @@ public sealed class SqliteGardenStoreTests : IDisposable
         public DateTimeOffset Ahora { get; set; } = ahora;
         public override DateTimeOffset GetUtcNow() => Ahora;
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
-    }
-
-    /// <summary>Simula que el disco falla justo al guardar LeyendaCaida.</summary>
-    private sealed class StoreQueFallaEnLeyenda(SqliteGardenStore real) : IGardenStore
-    {
-        public IReadOnlyList<HabitRecord> Cargar() => real.Cargar();
-        public void Guardar(HabitRecord registro) => real.Guardar(registro);
-        public void Eliminar(Guid habitoId) => real.Eliminar(habitoId);
-        public IReadOnlyList<LogroDesbloqueado> Logros() => real.Logros();
-        public void EnTransaccion(Action accion) => real.EnTransaccion(accion);
-        public void AgregarLogro(LogroDesbloqueado logro)
-        {
-            if (logro.Logro == Logro.LeyendaCaida) throw new IOException("disco lleno");
-            real.AgregarLogro(logro);
-        }
     }
 }

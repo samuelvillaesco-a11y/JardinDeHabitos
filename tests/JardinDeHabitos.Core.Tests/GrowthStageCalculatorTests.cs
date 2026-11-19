@@ -52,21 +52,22 @@ public class GrowthStageCalculatorTests
     }
 
     [Fact]
-    public void CalcularEtapa_UsaElRelojInyectado()
+    public void CalcularEtapa_UsaDiasDeCrecimientoNoElCalendario()
     {
         var reloj = new RelojManual(new DateTimeOffset(2026, 1, 1, 10, 0, 0, TimeSpan.Zero));
         var calc = new GrowthStageCalculator(reloj);
         var habito = new Habit
         {
-            Nombre = "Cigarro",
+            Categoria = MalHabito.Cigarro,
             EspecieDeArbol = "Manzano",
             Tipo = HabitType.AbstinenciaTotal,
             FechaDeInicioRachaActual = Inicio,
         };
 
+        reloj.Ahora = reloj.Ahora.AddDays(30);
         Assert.Equal(GrowthStage.Semilla, calc.CalcularEtapa(habito));
 
-        reloj.Ahora = reloj.Ahora.AddDays(7);
+        habito.DiasDeCrecimiento = 7;
         Assert.Equal(GrowthStage.Flor, calc.CalcularEtapa(habito));
     }
 
@@ -76,20 +77,10 @@ public class GrowthStageCalculatorTests
         var relojBase = new RelojManual(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var acelerado = RelojAcelerado.UnDiaCada(TimeSpan.FromMinutes(1), relojBase);
         var calc = new GrowthStageCalculator(acelerado);
-        var habito = new Habit
-        {
-            Nombre = "Azúcar",
-            EspecieDeArbol = "Naranjo",
-            Tipo = HabitType.Moderable,
-            FechaDeInicioRachaActual = calc.Hoy,
-        };
+        var inicio = calc.Hoy;
 
         relojBase.Ahora = relojBase.Ahora.AddMinutes(30);
-        Assert.Equal(30, calc.DiasTranscurridos(habito));
-        Assert.Equal(GrowthStage.FrutaInmadura, calc.CalcularEtapa(habito));
-
-        relojBase.Ahora = relojBase.Ahora.AddMinutes(335); // 365 min en total
-        Assert.Equal(GrowthStage.FrutaLegendaria, calc.CalcularEtapa(habito));
+        Assert.Equal(30, GrowthStageCalculator.DiasTranscurridos(inicio, calc.Hoy));
     }
 
     [Fact]

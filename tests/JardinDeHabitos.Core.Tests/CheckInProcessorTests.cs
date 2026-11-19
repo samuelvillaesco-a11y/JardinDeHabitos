@@ -11,292 +11,184 @@ public class CheckInProcessorTests
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
     }
 
-    private static readonly DateOnly D = new(2026, 1, 1);
+    private static readonly DateOnly D = new(2026, 1, 1); // jueves
 
     private readonly RelojManual _reloj = new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
     private readonly CheckInProcessor _proc;
     private readonly StrikeState _estado = new();
+    private readonly Habit _habito = Nuevo();
 
-    public CheckInProcessorTests()
-    {
-        _proc = new CheckInProcessor(new GrowthStageCalculator(_reloj));
-    }
+    public CheckInProcessorTests() => _proc = new CheckInProcessor(new GrowthStageCalculator(_reloj));
 
-    private static Habit NuevoHabito(DateOnly inicioRacha, HabitType tipo = HabitType.AbstinenciaTotal) => new()
+    private static Habit Nuevo(HabitType tipo = HabitType.AbstinenciaTotal, params DayOfWeek[] cheat) => new()
     {
-        Nombre = "Cigarro",
+        Categoria = MalHabito.Cigarro,
         EspecieDeArbol = "Manzano",
         Tipo = tipo,
-        FechaDeInicioRachaActual = inicioRacha,
+        FechaDeInicioRachaActual = D,
+        DiasDeCheat = [.. cheat],
     };
 
-    private CheckInOutcome En(int dia, Habit habito, CheckInResult resultado)
+    private CheckInOutcome En(int dia, CheckInResult r, Habit? h = null)
     {
         _reloj.Ahora = new DateTimeOffset(D.AddDays(dia), new TimeOnly(12, 0), TimeSpan.Zero);
-        return _proc.Procesar(habito, _estado, resultado);
+        return _proc.Procesar(h ?? _habito, _estado, r);
     }
 
     [Fact]
-    public void Cumplido_NoCambiaNada()
+    public void Cumplido_SanoSumaUnDia()
     {
-        var r = En(0, NuevoHabito(D), CheckInResult.Cumplido);
+        En(0, CheckInResult.Cumplido);
+        En(1, CheckInResult.Cumplido);
 
-        Assert.False(r.ArbolMurio);
-        Assert.Equal(PenaltyLevel.Ninguna, r.Penalizacion);
-        Assert.Equal(0, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(0, _estado.StrikesTotalesDelArbolActual);
+        Assert.Equal(2, _habito.DiasDeCrecimiento);
     }
 
     [Fact]
-    public void UnRoto_Strike1_DosDiasDeCuidado()
+    public void Cumplido_EnCuidadoNoSuma()
     {
-        var r = En(0, NuevoHabito(D), CheckInResult.Roto);
+        En(0, CheckInResult.Roto);
+        En(1, CheckInResult.Cumplido);
+        En(2, CheckInResult.Cumplido);
+        En(3, CheckInResult.Cumplido); // la plaga terminó (fin exclusivo día 3)
 
-        Assert.Equal(PenaltyLevel.Strike1, r.Penalizacion);
-        Assert.Equal(D.AddDays(2), r.FinDePenalizacion);
-        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+        Assert.Equal(1, _habito.DiasDeCrecimiento);
     }
 
     [Fact]
-    public void DosRotosSeguidos_Strike2_UnaSemanaTotal()
+    public void Strike1_Plaga3Dias()
     {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        var r = En(1, h, CheckInResult.Roto);
+        var r = En(0, CheckInResult.Roto);
 
-        Assert.False(r.ArbolMurio);
-        Assert.Equal(PenaltyLevel.Strike2, r.Penalizacion);
-        Assert.Equal(D.AddDays(7), r.FinDePenalizacion);
-        Assert.Equal(2, _estado.StrikesTotalesDelArbolActual);
+        Assert.True(r.EmpezoCuidado);
+        Assert.Equal(D.AddDays(3), _estado.FinPlaga);
+        Assert.Null(_estado.FinRaices);
+        Assert.Equal(PenaltyLevel.Strike1, CheckInProcessor.Nivel(_estado, D));
     }
 
     [Fact]
-    public void TresRotosSeguidos_ArbolMuereYResetea()
+    public void Strike2_ConPlagaActiva_SoloRaices_TotalOchoDias()
     {
-        var h = NuevoHabito(D.AddDays(-20));
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Roto);
-        var r = En(2, h, CheckInResult.Roto);
+        En(0, CheckInResult.Roto);
+        En(1, CheckInResult.Roto);
+
+        Assert.Equal(D.AddDays(3), _estado.FinPlaga);
+        Assert.Equal(D.AddDays(8), _estado.FinRaices);
+        Assert.Equal(D.AddDays(8), CheckInProcessor.FinCuidado(_estado, D.AddDays(1)));
+    }
+
+    [Fact]
+    public void Strike2_SinPlagaActiva_PlagaYRaices()
+    {
+        En(0, CheckInResult.Roto);
+        En(20, CheckInResult.Roto);
+
+        Assert.Equal(D.AddDays(23), _estado.FinPlaga);
+        Assert.Equal(D.AddDays(28), _estado.FinRaices);
+        Assert.True(CheckInProcessor.TienePlaga(_estado, D.AddDays(22)));
+        Assert.False(CheckInProcessor.TienePlaga(_estado, D.AddDays(23)));
+        Assert.True(CheckInProcessor.TieneRaices(_estado, D.AddDays(27)));
+    }
+
+    [Fact]
+    public void StrikesNoConsecutivosSeAcumulan()
+    {
+        En(0, CheckInResult.Roto);
+        for (int d = 1; d <= 10; d++) En(d, CheckInResult.Cumplido);
+        En(11, CheckInResult.Roto);
+
+        Assert.Equal(2, _estado.StrikesDeclarados);
+    }
+
+    [Fact]
+    public void Strike3_Muere_TodoACero()
+    {
+        for (int d = 0; d < 10; d++) En(d, CheckInResult.Cumplido);
+        En(10, CheckInResult.Roto);
+        En(30, CheckInResult.Roto);
+        var r = En(60, CheckInResult.Roto);
 
         Assert.True(r.ArbolMurio);
-        Assert.Equal(PenaltyLevel.Ninguna, r.Penalizacion);
-        Assert.Null(r.FinDePenalizacion);
-        Assert.Equal(0, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(0, _estado.StrikesTotalesDelArbolActual);
-        Assert.Equal(PenaltyLevel.Ninguna, _estado.NivelDePenalizacion);
-        Assert.Null(_estado.FechaFinDePenalizacionActiva);
-        Assert.Equal(D.AddDays(2), h.FechaDeInicioRachaActual);
+        Assert.Equal(10, r.DiasAntesDeMorir);
+        Assert.Equal(0, _habito.DiasDeCrecimiento);
+        Assert.Equal(0, _estado.StrikesDeclarados);
+        Assert.Null(_estado.FinPlaga);
+        Assert.Null(_estado.FinRaices);
+        Assert.Equal(D.AddDays(60), _habito.FechaDeInicioRachaActual);
     }
 
     [Fact]
-    public void DiaLimpioEnMedio_ReiniciaRachaPeroNoCicatrices()
+    public void Borron_Antes90Dias_NoSePuede()
     {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Cumplido);
-        var r = En(2, h, CheckInResult.Roto);
+        En(0, CheckInResult.Roto);
+        _reloj.Ahora = _reloj.Ahora.AddDays(89);
 
-        Assert.False(r.ArbolMurio);
-        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(2, _estado.StrikesTotalesDelArbolActual);
-        Assert.Equal(PenaltyLevel.Strike1, r.Penalizacion);
-        Assert.Equal(D.AddDays(4), r.FinDePenalizacion);
+        Assert.False(_proc.PuedeBorron(_estado));
+        Assert.Throws<InvalidOperationException>(() => _proc.Borron(_estado));
     }
 
     [Fact]
-    public void Cumplido_NoAcortaPenalizacionEnCurso()
+    public void Borron_A90Dias_BorraAmbosContadores()
     {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        var r = En(1, h, CheckInResult.Cumplido);
+        En(0, CheckInResult.Roto);
+        _estado.StrikesAbandono = 1;
+        _reloj.Ahora = _reloj.Ahora.AddDays(90);
 
-        Assert.Equal(0, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(PenaltyLevel.Strike1, r.Penalizacion);
-        Assert.Equal(D.AddDays(2), r.FinDePenalizacion);
+        Assert.True(_proc.PuedeBorron(_estado));
+        _proc.Borron(_estado);
+        Assert.Equal(0, _estado.StrikesDeclarados);
+        Assert.Equal(0, _estado.StrikesAbandono);
     }
 
     [Fact]
-    public void Cumplido_NoBajaStrike2PorUnRotoNuevo()
+    public void Borron_SinStrikes_NoSeOfrece()
     {
-        // Roto, Roto (Strike2 hasta D+7), Cumplido, Roto → sigue Strike2, fin no se acorta.
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Roto);
-        En(2, h, CheckInResult.Cumplido);
-        var r = En(3, h, CheckInResult.Roto);
-
-        Assert.Equal(PenaltyLevel.Strike2, r.Penalizacion);
-        Assert.Equal(D.AddDays(7), r.FinDePenalizacion);
+        _reloj.Ahora = _reloj.Ahora.AddDays(200);
+        Assert.False(_proc.PuedeBorron(_estado));
     }
 
     [Fact]
-    public void PenalizacionExpira()
+    public void Fenix_365SinStrikes_PrimerStrike_MarcaPendiente()
     {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        var r = En(2, h, CheckInResult.Cumplido);
+        _habito.DiasDeCrecimiento = 365;
+        En(0, CheckInResult.Roto);
 
-        Assert.Equal(PenaltyLevel.Ninguna, r.Penalizacion);
-        Assert.Null(r.FinDePenalizacion);
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
+        Assert.True(_estado.FenixPendiente);
     }
 
     [Fact]
-    public void RotoTrasExpirar_NuevaPenalizacionDesdeHoy()
+    public void Fenix_ConStrikesPrevios_NoSeMarca()
     {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Cumplido);
-        En(5, h, CheckInResult.Cumplido);
-        var r = En(6, h, CheckInResult.Roto);
+        En(0, CheckInResult.Roto);
+        _habito.DiasDeCrecimiento = 400;
+        En(10, CheckInResult.Roto);
 
-        Assert.Equal(PenaltyLevel.Strike1, r.Penalizacion);
-        Assert.Equal(D.AddDays(8), r.FinDePenalizacion);
+        Assert.False(_estado.FenixPendiente);
     }
 
     [Fact]
-    public void CheatDay_EnAbstinenciaTotal_Lanza()
+    public void DosCheckInsElMismoDia_Lanza()
     {
-        var h = NuevoHabito(D, HabitType.AbstinenciaTotal);
-
-        Assert.Throws<InvalidOperationException>(() => En(0, h, CheckInResult.CheatDay));
+        En(0, CheckInResult.Cumplido);
+        Assert.Throws<InvalidOperationException>(() => En(0, CheckInResult.Cumplido));
     }
 
     [Fact]
-    public void CheatDay_EnModerable_EsNeutral()
+    public void CheatDay_EnAbstinencia_Lanza() =>
+        Assert.Throws<InvalidOperationException>(() => En(0, CheckInResult.CheatDay));
+
+    [Fact]
+    public void CheatDay_EnDiaNormal_Lanza()
     {
-        var h = NuevoHabito(D, HabitType.Moderable);
-        h.DiasDeCheat = [DayOfWeek.Friday]; // D+1 es viernes
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.CheatDay);
-
-        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
-
-        var r = En(2, h, CheckInResult.Roto);
-        Assert.Equal(PenaltyLevel.Strike2, r.Penalizacion);
-        Assert.Equal(2, _estado.RachaConsecutivaDeDiasRotos);
+        var h = Nuevo(HabitType.Moderable, DayOfWeek.Sunday);
+        Assert.Throws<InvalidOperationException>(() => En(0, CheckInResult.CheatDay, h)); // jueves
     }
 
     [Fact]
-    public void DobleCheckInMismoDia_Lanza()
+    public void CheckIn_ReiniciaFaltas()
     {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-
-        Assert.Throws<InvalidOperationException>(() => En(0, h, CheckInResult.Roto));
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
-    }
-
-    [Fact]
-    public void CheckInDiaSiguiente_Permitido()
-    {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Cumplido);
-        En(1, h, CheckInResult.Cumplido);
-
-        Assert.Equal(D.AddDays(1), _estado.FechaUltimoCheckIn);
-    }
-
-    [Fact]
-    public void Muerte_TrasFrutaLegendaria_DisparaLeyendaCaida()
-    {
-        var h = NuevoHabito(D.AddDays(-365));
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Roto);
-        var r = En(2, h, CheckInResult.Roto);
-
-        Assert.True(r.ArbolMurio);
-        Assert.True(r.LeyendaCaida);
-    }
-
-    [Fact]
-    public void Muerte_AntesDeLegendaria_NoDispara()
-    {
-        // Muere en el día 364 de la racha.
-        var h = NuevoHabito(D.AddDays(-362));
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Roto);
-        var r = En(2, h, CheckInResult.Roto);
-
-        Assert.True(r.ArbolMurio);
-        Assert.False(r.LeyendaCaida);
-    }
-
-    [Fact]
-    public void Cicatrices_NoBorrablesAntesDe180Dias()
-    {
-        var h = NuevoHabito(D.AddDays(-179));
-        En(0, h, CheckInResult.Roto);
-
-        Assert.False(_proc.PuedeBorrarCicatrices(h, _estado));
-        Assert.Throws<InvalidOperationException>(() => _proc.BorrarCicatrices(h, _estado));
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
-    }
-
-    [Fact]
-    public void Cicatrices_BorrablesA180Dias()
-    {
-        var h = NuevoHabito(D.AddDays(-179));
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Roto); // día 180 de la racha
-
-        Assert.True(_proc.PuedeBorrarCicatrices(h, _estado));
-        _proc.BorrarCicatrices(h, _estado);
-
-        Assert.Equal(0, _estado.StrikesTotalesDelArbolActual);
-        Assert.Equal(2, _estado.RachaConsecutivaDeDiasRotos);
-    }
-
-    [Fact]
-    public void Cicatrices_SinCicatricesNoHayNadaQueBorrar()
-    {
-        var h = NuevoHabito(D.AddDays(-200));
-        En(0, h, CheckInResult.Cumplido);
-
-        Assert.False(_proc.PuedeBorrarCicatrices(h, _estado));
-    }
-
-    [Fact]
-    public void Cicatrices_NoSeBorranSolas()
-    {
-        var h = NuevoHabito(D.AddDays(-179));
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Cumplido); // llega a 180 días
-
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
-    }
-
-    [Fact]
-    public void RotosSeparadosPorHueco_NoSonSeguidos()
-    {
-        var h = NuevoHabito(D);
-        En(0, h, CheckInResult.Roto);
-        var r = En(5, h, CheckInResult.Roto);
-
-        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(PenaltyLevel.Strike1, r.Penalizacion);
-        Assert.Equal(2, _estado.StrikesTotalesDelArbolActual);
-    }
-
-    [Fact]
-    public void RelojHaciaAtras_CheckInRechazado()
-    {
-        var h = NuevoHabito(D);
-        En(1, h, CheckInResult.Roto);
-
-        Assert.Throws<InvalidOperationException>(() => En(0, h, CheckInResult.Roto));
-        Assert.Equal(1, _estado.StrikesTotalesDelArbolActual);
-    }
-
-    [Fact]
-    public void StrikeNoReiniciaCrecimiento()
-    {
-        var h = NuevoHabito(D.AddDays(-10));
-        En(0, h, CheckInResult.Roto);
-        En(1, h, CheckInResult.Roto);
-
-        Assert.Equal(D.AddDays(-10), h.FechaDeInicioRachaActual);
+        _estado.DiasNormalesSinCheckIn = 9;
+        En(0, CheckInResult.Cumplido);
+        Assert.Equal(0, _estado.DiasNormalesSinCheckIn);
     }
 }

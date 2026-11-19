@@ -37,11 +37,12 @@ public class GrowthStageCalculator
     /// <summary>Fecha local "de hoy" según el reloj configurado.</summary>
     public DateOnly Hoy => DateOnly.FromDateTime(_reloj.GetLocalNow().DateTime);
 
-    public int DiasTranscurridos(Habit habito) =>
-        DiasTranscurridos(habito.FechaDeInicioRachaActual, Hoy);
+    /// <summary>Fecha y hora local según el reloj configurado.</summary>
+    public DateTime AhoraLocal => _reloj.GetLocalNow().DateTime;
 
+    /// <summary>La etapa sale de los días que el árbol de verdad creció, no del calendario.</summary>
     public GrowthStage CalcularEtapa(Habit habito) =>
-        EtapaParaDias(DiasTranscurridos(habito));
+        EtapaParaDias(habito.DiasDeCrecimiento);
 
     /// <summary>Días completos entre el inicio de la racha y hoy (nunca negativo).</summary>
     public static int DiasTranscurridos(DateOnly inicioRacha, DateOnly hoy) =>

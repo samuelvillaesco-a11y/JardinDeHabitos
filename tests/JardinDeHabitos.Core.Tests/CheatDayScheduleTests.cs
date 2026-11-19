@@ -19,7 +19,7 @@ public class CheatDayScheduleTests
 
     private static Habit Moderable(params DayOfWeek[] dias) => new()
     {
-        Nombre = "Azúcar",
+        Categoria = MalHabito.Azucares,
         EspecieDeArbol = "Naranjo",
         Tipo = HabitType.Moderable,
         FechaDeInicioRachaActual = Jueves,
@@ -104,26 +104,5 @@ public class CheatDayScheduleTests
     {
         var h = Moderable(DayOfWeek.Sunday);
         Assert.Throws<InvalidOperationException>(() => En(Domingo, h, CheckInResult.Roto));
-    }
-
-    [Fact]
-    public void DiaDeCheatSinCheckIn_NoCortaRachaDeRotos()
-    {
-        var h = Moderable(DayOfWeek.Sunday);
-        En(Sabado, h, CheckInResult.Roto);
-        var r = En(Lunes, h, CheckInResult.Roto);
-
-        Assert.Equal(2, _estado.RachaConsecutivaDeDiasRotos);
-        Assert.Equal(PenaltyLevel.Strike2, r.Penalizacion);
-    }
-
-    [Fact]
-    public void DiaNormalSinCheckIn_SiCortaRacha()
-    {
-        var h = Moderable(DayOfWeek.Sunday);
-        En(Jueves, h, CheckInResult.Roto);
-        En(Sabado, h, CheckInResult.Roto); // viernes sin check-in
-
-        Assert.Equal(1, _estado.RachaConsecutivaDeDiasRotos);
     }
 }

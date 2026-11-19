@@ -18,8 +18,21 @@ public class GardenServiceTests
 
     public GardenServiceTests() => _svc = new GardenService(_store, new GrowthStageCalculator(_reloj));
 
-    private VistaArbol Crear(string nombre = "Cigarro", HabitType tipo = HabitType.AbstinenciaTotal, params DayOfWeek[] cheat) =>
-        _svc.CrearHabito(nombre, "Manzano", tipo, cheat);
+    private VistaArbol Crear(MalHabito h = MalHabito.Cigarro, string especie = "Manzano",
+        HabitType tipo = HabitType.AbstinenciaTotal, params DayOfWeek[] cheat) =>
+        _svc.CrearHabito(h, especie, tipo, cheat);
+
+    /// <summary>Check-in "cumplido" n días seguidos, empezando hoy.</summary>
+    private void Cumplir(Guid id, int dias)
+    {
+        for (int i = 0; i < dias; i++)
+        {
+            _svc.CheckIn(id, CheckInResult.Cumplido);
+            _reloj.AvanzarDias(1);
+        }
+    }
+
+    private bool Tiene(string id) => _store.NivelesLogro().Any(n => n.Id == id);
 
     [Fact]
     public void CrearHabito_EmpiezaEnSemillaYPideCheckIn()
@@ -29,236 +42,321 @@ public class GardenServiceTests
         Assert.Equal(GrowthStage.Semilla, v.Etapa);
         Assert.Equal(0, v.Dias);
         Assert.True(v.PideCheckInHoy);
-        Assert.Single(_svc.Jardin());
+        Assert.Equal("Manzano", v.Especie);
+    }
+
+    [Fact]
+    public void CrearHabito_EspecieUsada_Lanza()
+    {
+        Crear(MalHabito.Cigarro, "Manzano");
+        Assert.Throws<InvalidOperationException>(() => Crear(MalHabito.Sal, "Manzano", HabitType.Moderable));
+        Assert.DoesNotContain("Manzano", _svc.EspeciesLibres());
+    }
+
+    [Fact]
+    public void CrearHabito_HabitoRepetido_Lanza_SalvoOtros()
+    {
+        Crear(MalHabito.Cigarro, "Manzano");
+        Assert.Throws<InvalidOperationException>(() => Crear(MalHabito.Cigarro, "Naranjo"));
+        Assert.DoesNotContain(_svc.HabitosDisponibles(), h => h.Habito == MalHabito.Cigarro);
+
+        Crear(MalHabito.Otros, "Naranjo");
+        Crear(MalHabito.Otros, "Limonero");
+        Assert.Contains(_svc.HabitosDisponibles(), h => h.Habito == MalHabito.Otros);
+    }
+
+    [Fact]
+    public void CrearHabito_ModoNoPermitido_Lanza() =>
+        Assert.Throws<InvalidOperationException>(() => Crear(MalHabito.Apuestas, "Manzano", HabitType.Moderable));
+
+    [Fact]
+    public void CrearHabito_DiasPrevios_NaceCrecido()
+    {
+        var v = _svc.CrearHabito(MalHabito.Alcohol, "Cerezo", HabitType.AbstinenciaTotal, [], diasPrevios: 400);
+
+        Assert.Equal(GrowthStage.FrutaLegendaria, v.Etapa);
+        Assert.Contains(_svc.Estante(), e => e.Def.Id == "hab.alcohol.tiempo2" && e.Nivel == 3);
     }
 
     [Fact]
     public void CrearHabito_MasDeDiez_Lanza()
     {
-        for (var i = 0; i < 10; i++) Crear($"h{i}");
+        var especies = EspeciesDeArbol.Todas;
+        for (var i = 0; i < 10; i++) Crear(MalHabito.Otros, especies[i]);
 
-        Assert.Throws<InvalidOperationException>(() => Crear("once"));
-    }
-
-    [Fact]
-    public void CrearHabito_NombreVacio_Lanza()
-    {
-        Assert.Throws<ArgumentException>(() => Crear("  "));
-    }
-
-    [Fact]
-    public void CrearHabito_AbstinenciaConCheat_Lanza()
-    {
-        Assert.Throws<ArgumentException>(() => Crear("Alcohol", HabitType.AbstinenciaTotal, DayOfWeek.Sunday));
+        Assert.Throws<InvalidOperationException>(() => Crear(MalHabito.Sal, "Manzano", HabitType.Moderable));
     }
 
     [Fact]
     public void CheckIn_PersisteYNoPideOtraVezHoy()
     {
         var v = Crear();
-        _svc.CheckIn(v.Id, CheckInResult.Roto);
+        _svc.CheckIn(v.Id, CheckInResult.Cumplido);
 
         var hoy = _svc.Jardin().Single();
         Assert.False(hoy.PideCheckInHoy);
-        Assert.Equal(1, hoy.Racha);
-        Assert.Equal(1, hoy.Cicatrices);
-        Assert.Equal(PenaltyLevel.Strike1, hoy.Penalizacion);
-
-        _reloj.AvanzarDias(1);
-        Assert.True(_svc.Jardin().Single().PideCheckInHoy);
+        Assert.Equal(1, hoy.Dias);
+        Assert.Throws<InvalidOperationException>(() => _svc.CheckIn(v.Id, CheckInResult.Cumplido));
     }
 
     [Fact]
-    public void Vista_PenalizacionVencida_SeMuestraNinguna()
+    public void SinCheckIn_NoCrece()
+    {
+        var v = Crear();
+        _reloj.AvanzarDias(10);
+
+        var hoy = _svc.Arbol(v.Id);
+        Assert.Equal(0, hoy.Dias);
+        Assert.Equal(10, hoy.DiasSinVisita);
+    }
+
+    [Fact]
+    public void DosStrikesSeguidos_CuidadoDeOchoDias()
     {
         var v = Crear();
         _svc.CheckIn(v.Id, CheckInResult.Roto);
-        _reloj.AvanzarDias(2);
+        _reloj.AvanzarDias(1);
+        _svc.CheckIn(v.Id, CheckInResult.Roto);
 
-        Assert.Equal(PenaltyLevel.Ninguna, _svc.Jardin().Single().Penalizacion);
+        var hoy = _svc.Arbol(v.Id);
+        Assert.True(hoy.Plaga && hoy.Raices);
+        Assert.Equal(new DateOnly(2026, 1, 9), hoy.FinCuidado);
     }
 
     [Fact]
-    public void CheatDayHoy_NoPideCheckIn()
+    public void Estante_GeneralesVisibles_HabitoAlPlantar_OcultosNunca()
     {
-        _reloj.AvanzarDias(3); // domingo
-        var v = Crear("Azúcar", HabitType.Moderable, DayOfWeek.Sunday);
+        Assert.Contains(_svc.Estante(), e => e.Def.Id == "gen.semilla");
+        Assert.DoesNotContain(_svc.Estante(), e => e.Def.Categoria == CategoriaLogro.Habito);
 
-        Assert.True(v.EsCheatDayHoy);
-        Assert.False(v.PideCheckInHoy);
+        Crear(MalHabito.Apuestas, "Cerezo");
+        var estante = _svc.Estante();
+        Assert.True(estante.Count(e => e.Def.Habito == MalHabito.Apuestas) >= 10);
+        Assert.DoesNotContain(estante, e => e.Def.Habito is { } h && h != MalHabito.Apuestas);
+        Assert.DoesNotContain(estante, e => e.Def.Categoria is CategoriaLogro.Oculto or CategoriaLogro.Maldito or CategoriaLogro.Legendario);
+        Assert.Equal("Cerezo", estante.First(e => e.Def.Habito == MalHabito.Apuestas).Arbol);
     }
 
     [Fact]
-    public void Muerte_DeArbolLegendario_DesbloqueaLeyendaCaida()
+    public void Estante_DiasLibres_SoloSiModera()
+    {
+        Crear(MalHabito.Sal, "Naranjo", HabitType.AbstinenciaTotal);
+        Assert.DoesNotContain(_svc.Estante(), e => e.Def.Id == "hab.sal.libres");
+
+        Crear(MalHabito.Azucares, "Mango", HabitType.Moderable, DayOfWeek.Sunday);
+        Assert.Contains(_svc.Estante(), e => e.Def.Id == "hab.azucares.libres");
+    }
+
+    [Fact]
+    public void LogrosNuevos_SeAnuncianUnaSolaVez()
+    {
+        Crear();
+        Assert.Equal(1, _svc.TomarLogrosNuevos()); // Manos a la tierra ★
+        Assert.Equal(0, _svc.TomarLogrosNuevos());
+        _svc.Refrescar();
+        Assert.Equal(0, _svc.TomarLogrosNuevos());
+    }
+
+    [Fact]
+    public void Riego_DeNoche_CuentaParaOculto_SinMostrarlo()
     {
         var v = Crear();
-        _reloj.AvanzarDias(400);
+        for (int i = 0; i < 10; i++)
+        {
+            _reloj.Ahora = new DateTimeOffset(2026, 1, 1 + i, 22, 0, 0, TimeSpan.Zero);
+            _svc.RegistrarJuego(v.Id, MiniJuegoTipo.Regar);
+        }
+
+        Assert.True(Tiene("oc.nocturno"));
+        Assert.Contains(_svc.Estante(), e => e.Def.Id == "oc.nocturno" && e.Nivel == 1);
+    }
+
+    [Fact]
+    public void Poda_RepetidaElMismoDia_NoSumaRamas()
+    {
+        var v = Crear();
+        _svc.RegistrarJuego(v.Id, MiniJuegoTipo.Podar, 3);
+        _svc.RegistrarJuego(v.Id, MiniJuegoTipo.Podar, 3);
+
+        Assert.Equal(3, _store.Estadisticas()[Stat.Ramas]);
+    }
+
+    [Fact]
+    public void Muerte_DeArbolLegendario_LeyendaCaidaConDebuff_YCoronaLoRedime()
+    {
+        var v = _svc.CrearHabito(MalHabito.Cigarro, "Manzano", HabitType.AbstinenciaTotal, [], diasPrevios: 365);
         _svc.CheckIn(v.Id, CheckInResult.Roto);
         _reloj.AvanzarDias(1);
         _svc.CheckIn(v.Id, CheckInResult.Roto);
         _reloj.AvanzarDias(1);
-        var r = _svc.CheckIn(v.Id, CheckInResult.Roto);
+        _svc.CheckIn(v.Id, CheckInResult.Roto);
 
-        Assert.True(r.Outcome.ArbolMurio);
-        Assert.Contains(Logro.LeyendaCaida, r.NuevosLogros);
-        Assert.Contains(_svc.LogrosDesbloqueados(), l => l.Logro == Logro.LeyendaCaida);
-        Assert.Contains(_svc.LogrosDesbloqueados(), l => l.Logro == Logro.FrutaLegendaria);
-        Assert.Equal(GrowthStage.Semilla, _svc.Jardin().Single().Etapa);
+        Assert.True(Tiene("mal.leyenda_caida"));
+        Assert.Contains(Debuff.MasBichos, _svc.Debuffs());
+
+        _svc.CrearHabito(MalHabito.Sal, "Naranjo", HabitType.AbstinenciaTotal, [], diasPrevios: 365);
+        Assert.True(Tiene("leg.corona"));
+        Assert.Empty(_svc.Debuffs());
     }
 
     [Fact]
-    public void Muerte_NoLegendaria_NoDesbloqueaNada()
+    public void Muerte_NoLegendaria_NoEsMaldita()
     {
         var v = Crear();
-        for (var i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
             _svc.CheckIn(v.Id, CheckInResult.Roto);
             _reloj.AvanzarDias(1);
         }
 
-        Assert.Empty(_svc.LogrosDesbloqueados());
+        Assert.DoesNotContain(_store.NivelesLogro(), n => n.Id.StartsWith("mal."));
     }
 
     [Fact]
-    public void Refrescar_RegistraFrutaLegendariaUnaSolaVez()
+    public void Fenix_UnAnoLimpio_Recaida_CuidadoCompleto()
     {
-        Crear("a");
-        Crear("b");
-        _reloj.AvanzarDias(365);
-
-        Assert.Equal([Logro.FrutaLegendaria], _svc.Refrescar());
-        Assert.Empty(_svc.Refrescar());
-        Assert.Single(_svc.LogrosDesbloqueados());
-    }
-
-    [Fact]
-    public void LeyendaCaida_EsSecretaHastaDesbloquear()
-    {
-        Assert.DoesNotContain(Logro.LeyendaCaida, _svc.LogrosPorDesbloquear());
-        Assert.Contains(Logro.FrutaLegendaria, _svc.LogrosPorDesbloquear());
-        Assert.True(LogroInfo.De(Logro.LeyendaCaida).EsSecreto);
-    }
-
-    [Fact]
-    public void LogrosSobrevivenAlEliminarHabito()
-    {
-        var v = Crear();
-        _reloj.AvanzarDias(365);
+        var v = _svc.CrearHabito(MalHabito.Alcohol, "Cerezo", HabitType.AbstinenciaTotal, [], diasPrevios: 365);
+        _svc.CheckIn(v.Id, CheckInResult.Roto);
+        for (int i = 0; i < 3; i++)
+        {
+            _svc.RegistrarTratamiento(v.Id);
+            _reloj.AvanzarDias(1);
+            if (i < 2) _svc.CheckIn(v.Id, CheckInResult.Cumplido);
+        }
         _svc.Refrescar();
-        _svc.EliminarHabito(v.Id);
 
-        Assert.Empty(_svc.Jardin());
-        Assert.Single(_svc.LogrosDesbloqueados());
+        Assert.True(Tiene("leg.fenix"));
+        Assert.True(Tiene("hab.alcohol.cura"));
     }
 
     [Fact]
-    public void Regar_YPodar_SoloCuentanHoy()
-    {
-        var v = Crear();
-        _svc.Regar(v.Id);
-        _svc.Podar(v.Id);
-
-        var hoy = _svc.Jardin().Single();
-        Assert.True(hoy.RegadoHoy);
-        Assert.True(hoy.PodadoHoy);
-
-        _reloj.AvanzarDias(1);
-        var manana = _svc.Jardin().Single();
-        Assert.False(manana.RegadoHoy);
-        Assert.False(manana.PodadoHoy);
-    }
-
-    [Fact]
-    public void Tratamiento_SinPenalizacion_Lanza()
-    {
-        var v = Crear();
-        Assert.Throws<InvalidOperationException>(() => _svc.RegistrarTratamiento(v.Id));
-    }
-
-    [Fact]
-    public void Tratamiento_ConPenalizacion_MarcaTratadoHoy()
+    public void Cuidado_SinTratar_NoCuentaComoCurado()
     {
         var v = Crear();
         _svc.CheckIn(v.Id, CheckInResult.Roto);
-        _svc.RegistrarTratamiento(v.Id);
+        _reloj.AvanzarDias(4);
+        _svc.Refrescar();
 
-        Assert.True(_svc.Jardin().Single().TratadoHoy);
+        Assert.False(Tiene("gen.cura"));
+    }
+
+    [Fact]
+    public void Abandono_GeneraAvisosSinNombreDeHabito()
+    {
+        Crear(MalHabito.Pornografia, "Limonero");
+        _reloj.AvanzarDias(7);
+        var avisos = _svc.TomarAvisos();
+
+        var a = Assert.Single(avisos);
+        Assert.Equal(TipoAviso.MiniEvento, a.Tipo);
+        Assert.Equal("Limonero", a.Especie);
+        Assert.Empty(_svc.TomarAvisos());
+
+        _reloj.AvanzarDias(7);
+        Assert.Equal(TipoAviso.PlagaPorAbandono, Assert.Single(_svc.TomarAvisos()).Tipo);
+    }
+
+    [Fact]
+    public void Avisos_EtapaNueva_UnaVez()
+    {
+        var v = Crear();
+        Cumplir(v.Id, 7);
+
+        var a = Assert.Single(_svc.TomarAvisos());
+        Assert.Equal(GrowthStage.Flor, a.Etapa);
+        Assert.Empty(_svc.TomarAvisos());
+    }
+
+    [Fact]
+    public void MiniEvento_SeResuelve_YCuenta()
+    {
+        var v = Crear();
+        _reloj.AvanzarDias(8);
+        Assert.NotEqual(MiniEvento.Ninguno, _svc.Arbol(v.Id).MiniEvento);
+
+        _svc.ResolverMiniEvento(v.Id, bichos: 2);
+
+        Assert.Equal(MiniEvento.Ninguno, _svc.Arbol(v.Id).MiniEvento);
+        Assert.True(Tiene("oc.rescate"));
+        Assert.Throws<InvalidOperationException>(() => _svc.ResolverMiniEvento(v.Id));
+    }
+
+    [Fact]
+    public void Asistencia_SoloConApoyo_UnaVezAlDia()
+    {
+        var sin = Crear();
+        Assert.Throws<InvalidOperationException>(() => _svc.RegistrarAsistencia(sin.Id));
+
+        var con = _svc.CrearHabito(MalHabito.Alcohol, "Cerezo", HabitType.AbstinenciaTotal, [], grupo: true);
+        _svc.RegistrarAsistencia(con.Id);
+        Assert.True(_svc.Arbol(con.Id).AsistioHoy);
+        Assert.Throws<InvalidOperationException>(() => _svc.RegistrarAsistencia(con.Id));
+        Assert.True(Tiene("gen.apoyo"));
+    }
+
+    [Fact]
+    public void Borron_A90Dias_YLogroTierraNueva()
+    {
+        var v = Crear();
+        _svc.CheckIn(v.Id, CheckInResult.Roto);
         _reloj.AvanzarDias(1);
-        Assert.False(_svc.Jardin().Single().TratadoHoy);
+        Cumplir(v.Id, 88);
+        Assert.False(_svc.Arbol(v.Id).PuedeBorron); // día 89
+        _svc.CheckIn(v.Id, CheckInResult.Cumplido);
+        _reloj.AvanzarDias(1);                       // día 90
+
+        Assert.True(_svc.Arbol(v.Id).PuedeBorron);
+        Assert.True(Tiene("hab.cigarro.borron"));
+        _svc.Borron(v.Id);
+        Assert.Equal(0, _svc.Arbol(v.Id).Strikes);
+    }
+
+    [Fact]
+    public void DiaLibre_CreceSoloSiHuboCheckIn()
+    {
+        var v = Crear(MalHabito.Azucares, "Mango", HabitType.Moderable, DayOfWeek.Friday);
+        _svc.CheckIn(v.Id, CheckInResult.Cumplido); // jueves
+        _reloj.AvanzarDias(2);                      // sábado (viernes libre cerrado)
+
+        Assert.Equal(2, _svc.Arbol(v.Id).Dias);
     }
 
     [Fact]
     public void EditarDiasDeCheat_SoloSabado()
     {
-        var v = Crear("Café", HabitType.Moderable, DayOfWeek.Sunday);
+        var v = Crear(MalHabito.Cafeina, "Olivo", HabitType.Moderable, DayOfWeek.Sunday);
         Assert.Throws<InvalidOperationException>(() => _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Friday]));
 
         _reloj.AvanzarDias(2); // sábado
         _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Friday, DayOfWeek.Saturday]);
-        _reloj.AvanzarDias(1); // la plantilla nueva rige desde el domingo
+        _reloj.AvanzarDias(1);
         Assert.Equal([DayOfWeek.Friday, DayOfWeek.Saturday], _svc.Jardin().Single().DiasDeCheat);
     }
 
     [Fact]
     public void EditarDiasDeCheat_NoConvierteHoyEnDiaLibre()
     {
-        var v = Crear("Café", HabitType.Moderable, DayOfWeek.Sunday);
+        var v = Crear(MalHabito.Cafeina, "Olivo", HabitType.Moderable, DayOfWeek.Sunday);
         _reloj.AvanzarDias(2); // sábado
         _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Saturday]);
 
         var hoy = _svc.Jardin().Single();
         Assert.False(hoy.EsCheatDayHoy);
         Assert.True(hoy.PideCheckInHoy);
-
-        _reloj.AvanzarDias(1); // domingo: ya rige la plantilla nueva, el domingo deja de ser libre
-        Assert.False(_svc.Jardin().Single().EsCheatDayHoy);
-
-        _reloj.AvanzarDias(6); // sábado siguiente
-        Assert.True(_svc.Jardin().Single().EsCheatDayHoy);
     }
 
     [Fact]
-    public void EditarDiasDeCheat_NoReescribeHuecosPasados()
-    {
-        var v = Crear("Café", HabitType.Moderable); // jueves, sin días libres
-        _svc.CheckIn(v.Id, CheckInResult.Roto);      // jueves
-        _reloj.AvanzarDias(2);                       // sábado (viernes sin check-in)
-        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Friday]);
-        _svc.CheckIn(v.Id, CheckInResult.Roto);
-
-        var hoy = _svc.Jardin().Single();
-        Assert.Equal(1, hoy.Racha);
-        Assert.Equal(PenaltyLevel.Strike1, hoy.Penalizacion);
-    }
-
-    [Fact]
-    public void EditarDiasDeCheat_DosVecesElMismoSabado_ConservaLaPlantillaVigente()
-    {
-        var v = Crear("Café", HabitType.Moderable, DayOfWeek.Saturday);
-        _reloj.AvanzarDias(2); // sábado, hoy es libre
-        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Monday]);
-        _svc.EditarDiasDeCheat(v.Id, [DayOfWeek.Tuesday]);
-
-        Assert.True(_svc.Jardin().Single().EsCheatDayHoy);
-        _reloj.AvanzarDias(3); // martes
-        Assert.True(_svc.Jardin().Single().EsCheatDayHoy);
-    }
-
-    [Fact]
-    public void BorrarCicatrices_A180Dias()
+    public void LogrosSobrevivenAlEliminarHabito()
     {
         var v = Crear();
-        _svc.CheckIn(v.Id, CheckInResult.Roto);
-        _reloj.AvanzarDias(180);
+        _svc.EliminarHabito(v.Id);
 
-        Assert.True(_svc.Jardin().Single().PuedeBorrarCicatrices);
-        _svc.BorrarCicatrices(v.Id);
-        Assert.Equal(0, _svc.Jardin().Single().Cicatrices);
+        Assert.Empty(_svc.Jardin());
+        Assert.True(Tiene("gen.semilla"));
+        Assert.Contains(_svc.Estante(), e => e.Def.Habito == MalHabito.Cigarro);
     }
 
     [Fact]
-    public void HabitoInexistente_Lanza()
-    {
-        Assert.Throws<KeyNotFoundException>(() => _svc.Regar(Guid.NewGuid()));
-    }
+    public void HabitoInexistente_Lanza() =>
+        Assert.Throws<KeyNotFoundException>(() => _svc.RegistrarJuego(Guid.NewGuid(), MiniJuegoTipo.Regar));
 }
