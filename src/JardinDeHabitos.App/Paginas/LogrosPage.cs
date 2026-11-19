@@ -330,9 +330,23 @@ public sealed class LogrosPage : ContentPage
 
     private View Celda(EntradaEstante e)
     {
-        var dibujo = new GraphicsView { Drawable = new Emblema(e), WidthRequest = 78, HeightRequest = 96, InputTransparent = true };
-        var celda = new ContentView { Content = dibujo, Margin = new Thickness(0, 4, 6, 4) };
-        SemanticProperties.SetDescription(celda, e.Nivel > 0 ? $"Emblema {Nombre(e.Rango)}{(e.Nuevo ? ", nuevo" : "")}" : "Emblema por ganar");
+        const double Ancho = 84;
+        var dibujo = new GraphicsView { Drawable = new Emblema(e), WidthRequest = Ancho, HeightRequest = 96, InputTransparent = true };
+        var nombre = Tema.Texto(e.Def.Titulo, 12, Tema.FuenteNegrita, e.Nivel > 0 ? Tema.Hueso : Tema.HuesoTenue);
+        nombre.HorizontalTextAlignment = TextAlignment.Center;
+        nombre.MaxLines = 2;
+        nombre.LineBreakMode = LineBreakMode.TailTruncation;
+        nombre.LineHeight = 1.0;
+        nombre.WidthRequest = Ancho;
+        nombre.InputTransparent = true;
+        var celda = new VerticalStackLayout
+        {
+            Spacing = 2,
+            WidthRequest = Ancho,
+            Margin = new Thickness(0, 4, 4, 8),
+            Children = { dibujo, nombre },
+        };
+        SemanticProperties.SetDescription(celda, $"{e.Def.Titulo}. {(e.Nivel > 0 ? $"Emblema {Nombre(e.Rango)}{(e.Nuevo ? ", nuevo" : "")}" : "Por ganar")}");
         var toque = new TapGestureRecognizer();
         toque.Tapped += (_, _) => AbrirDetalle(e);
         celda.GestureRecognizers.Add(toque);

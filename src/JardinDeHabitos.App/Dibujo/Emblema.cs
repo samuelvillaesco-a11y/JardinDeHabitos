@@ -29,8 +29,8 @@ public sealed record PaletaEmblema(Color Claro, Color Base, Color Oscuro, Color 
 }
 
 /// <summary>
-/// Un emblema del estante: medalla con cinta, un glifo según la categoría y las estrellas abajo.
-/// No lleva texto: lo que significa solo se ve al tocarlo.
+/// Un emblema del estante: medalla con cinta, un dibujo propio de cada logro y las estrellas abajo.
+/// El nombre va debajo, en la página; el detalle completo solo se ve al tocarlo.
 /// </summary>
 public sealed class Emblema(EntradaEstante entrada, bool conEstrellas = true) : IDrawable
 {
@@ -92,7 +92,9 @@ public sealed class Emblema(EntradaEstante entrada, bool conEstrellas = true) : 
             c.StrokeDashPattern = null;
         }
 
-        Glifo(c, centro, ri, ganado ? p.Claro : Tema.HuesoTenue.WithAlpha(0.35f));
+        // Dibujo que dice de qué es el logro (también en los que faltan, más tenue, para saber qué buscar).
+        var (pic, tachado) = Pictogramas.De(entrada.Def);
+        Pictogramas.Dibujar(c, pic, tachado, centro, ri, ganado ? p.Claro : Tema.HuesoTenue.WithAlpha(0.55f), ganado ? p.Base : p.Oscuro);
 
         if (conEstrellas && entrada.Def.Niveles.Length > 0 && entrada.Rango is not (Rango.Maldito or Rango.Legendario))
             Estrellas(c, r, ganado ? p.Base : Tema.HuesoTenue);
@@ -105,47 +107,6 @@ public sealed class Emblema(EntradaEstante entrada, bool conEstrellas = true) : 
             c.FillCircle(punto, d + 2);
             c.Relleno(Color.FromArgb("#E0352B"));
             c.FillCircle(punto, d);
-        }
-    }
-
-    /// <summary>Hoja (generales), árbol (por hábito), gota (mini-juegos), hoja rota (malditos), estrella (legendarios).</summary>
-    private void Glifo(ICanvas c, PointF o, float r, Color color)
-    {
-        c.Relleno(color);
-        c.StrokeColor = color;
-        c.StrokeLineCap = LineCap.Round;
-        switch (entrada.Def.Categoria)
-        {
-            case CategoriaLogro.Legendario:
-                c.FillPath(Estrella(o, r * 0.62f, r * 0.27f));
-                break;
-            case CategoriaLogro.Habito:
-                c.FillCircle(o.X, o.Y - r * 0.18f, r * 0.38f);
-                c.StrokeSize = r * 0.14f;
-                c.DrawLine(o.X, o.Y, o.X, o.Y + r * 0.55f);
-                break;
-            case CategoriaLogro.Oculto:
-                var gota = new PathF();
-                gota.MoveTo(o.X, o.Y - r * 0.55f);
-                gota.CurveTo(o.X + r * 0.55f, o.Y + r * 0.05f, o.X + r * 0.35f, o.Y + r * 0.5f, o.X, o.Y + r * 0.5f);
-                gota.CurveTo(o.X - r * 0.35f, o.Y + r * 0.5f, o.X - r * 0.55f, o.Y + r * 0.05f, o.X, o.Y - r * 0.55f);
-                c.FillPath(gota);
-                break;
-            default:
-                var hoja = new PathF();
-                hoja.MoveTo(o.X, o.Y - r * 0.55f);
-                hoja.QuadTo(o.X + r * 0.6f, o.Y, o.X, o.Y + r * 0.55f);
-                hoja.QuadTo(o.X - r * 0.6f, o.Y, o.X, o.Y - r * 0.55f);
-                c.FillPath(hoja);
-                if (entrada.Def.Categoria == CategoriaLogro.Maldito)
-                {
-                    // La grieta de la hoja maldita.
-                    c.StrokeColor = PaletaEmblema.Maldito.Cinta;
-                    c.StrokeSize = r * 0.08f;
-                    c.DrawLine(o.X - r * 0.15f, o.Y - r * 0.35f, o.X + r * 0.1f, o.Y);
-                    c.DrawLine(o.X + r * 0.1f, o.Y, o.X - r * 0.1f, o.Y + r * 0.35f);
-                }
-                break;
         }
     }
 
