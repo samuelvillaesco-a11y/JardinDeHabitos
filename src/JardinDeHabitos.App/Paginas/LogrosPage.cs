@@ -11,6 +11,19 @@ namespace JardinDeHabitos.App.Paginas;
 /// </summary>
 public sealed class LogrosPage : ContentPage
 {
+    // Mientras el estante está abierto: sin capturas y oculto en "apps recientes".
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        Pantalla.Privada(true);
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+    }
+
     private enum Orden { Categoria, NuevosPrimero, Recientes, Antiguos }
 
     private const string Todas = "todas";

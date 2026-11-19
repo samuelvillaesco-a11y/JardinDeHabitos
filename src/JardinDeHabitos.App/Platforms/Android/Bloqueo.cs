@@ -7,14 +7,35 @@ using Java.Lang;
 namespace JardinDeHabitos.App;
 
 /// <summary>
-/// Pide el bloqueo del teléfono (huella, PIN o patrón) antes de abrir el estante.
-/// Usa el mismo bloqueo del celular: no hay otra contraseña que recordar.
+/// Pide el bloqueo del teléfono (huella, PIN o patrón). Usa el mismo bloqueo del celular:
+/// no hay otra contraseña que recordar ni nada que guardar. Solo biometría fuerte (clase 3)
+/// o la credencial del dispositivo: un desbloqueo facial 2D no basta.
 /// </summary>
 public static class Bloqueo
 {
     public enum Resultado { Abierto, Cancelado, SinBloqueo }
 
-    public static Task<Resultado> PedirAsync()
+    /// <summary>
+    /// Verdadero mientras el diálogo de bloqueo está abierto. La pantalla de PIN/patrón es otra
+    /// actividad: la app pasa a segundo plano y no debe volver a cerrarse con llave por eso.
+    /// </summary>
+    public static bool EnCurso { get; private set; }
+
+    public static Task<Resultado> PedirAsync() => PedirAsync("Tu estante de trofeos", "Desbloquea para verlo");
+
+    public static async Task<Resultado> PedirAsync(string titulo, string subtitulo)
+    {
+        EnCurso = true;
+        try { return await Pedir(titulo, subtitulo); }
+        finally
+        {
+            // La actividad del PIN tarda un instante en cerrarse y la app en volver al frente.
+            await Task.Delay(800);
+            EnCurso = false;
+        }
+    }
+
+    private static Task<Resultado> Pedir(string titulo, string subtitulo)
     {
         var actividad = Platform.CurrentActivity;
         if (actividad is null) return Task.FromResult(Resultado.Cancelado);
@@ -27,10 +48,10 @@ public static class Bloqueo
 
         var tcs = new TaskCompletionSource<Resultado>();
         var builder = new BiometricPrompt.Builder(actividad)
-            .SetTitle("Tu estante de trofeos")
-            .SetSubtitle("Desbloquea para verlo");
+            .SetTitle(titulo)
+            .SetSubtitle(subtitulo);
         if (OperatingSystem.IsAndroidVersionAtLeast(30))
-            builder.SetAllowedAuthenticators((int)(BiometricManagerAuthenticators.BiometricWeak | BiometricManagerAuthenticators.DeviceCredential));
+            builder.SetAllowedAuthenticators((int)(BiometricManagerAuthenticators.BiometricStrong | BiometricManagerAuthenticators.DeviceCredential));
         else
 #pragma warning disable CA1422 // obsoleto en 30+, pero es la forma correcta en Android 10
             builder.SetDeviceCredentialAllowed(true);

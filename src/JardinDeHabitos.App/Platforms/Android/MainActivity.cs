@@ -12,6 +12,10 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnCreate(savedInstanceState);
 
+        // Con el seguro general, ni capturas ni miniatura en "apps recientes" desde el primer cuadro.
+        if (Seguridad.PantallaDebeSerPrivada)
+            Window?.SetFlags(Android.Views.WindowManagerFlags.Secure, Android.Views.WindowManagerFlags.Secure);
+
         if (OperatingSystem.IsAndroidVersionAtLeast(33)
             && CheckSelfPermission(Manifest.Permission.PostNotifications) != Permission.Granted)
         {

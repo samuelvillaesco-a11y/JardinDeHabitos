@@ -33,6 +33,11 @@ public sealed class JardinPage : ContentPage, IRefrescable
         SemanticProperties.SetDescription(logros, "Estante de trofeos");
         logros.Clicked += async (_, _) => await AbrirEstante();
 
+        // Entrada temporal al panel de seguridad (luego vivirá en Ajustes).
+        var seguridad = Tema.Boton("🔒 Seguridad", Colors.Transparent, Tema.HuesoTenue);
+        seguridad.HorizontalOptions = LayoutOptions.Center;
+        seguridad.Clicked += async (_, _) => await AbrirSeguridad();
+
         Content = new ScrollView
         {
             Content = new VerticalStackLayout
@@ -46,6 +51,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
                     _aviso,
                     _cuadricula,
                     logros,
+                    seguridad,
 #if DEBUG
                     BotonGaleria(),
                     BotonAcelerado(),
@@ -112,14 +118,16 @@ public sealed class JardinPage : ContentPage, IRefrescable
     private async Task AbrirEstante()
     {
         if (_navegando) return;
-        var r = await Bloqueo.PedirAsync();
-        if (r == Bloqueo.Resultado.Cancelado) return;
-        if (r == Bloqueo.Resultado.SinBloqueo)
-        {
-            await DisplayAlertAsync("Tu teléfono no tiene bloqueo",
-                "Para que nadie más vea tu estante, activa un PIN, patrón o huella en los ajustes del teléfono.", "Entendido");
-        }
+        if (!await Seguridad.EntrarAsync(this, Seguro.Logros, "Tu estante de trofeos")) return;
         await Abrir(() => new LogrosPage());
+    }
+
+    /// <summary>El panel de seguridad siempre pide el bloqueo, aunque los seguros estén apagados.</summary>
+    private async Task AbrirSeguridad()
+    {
+        if (_navegando) return;
+        if (!await Seguridad.VerificarAsync(this, "Ajustes de seguridad")) return;
+        await Abrir(() => new SeguridadPage());
     }
 
     public async void AlVolver()
