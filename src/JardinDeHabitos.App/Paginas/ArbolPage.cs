@@ -315,6 +315,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
                     await Intentar(() => Servicios.Jardin.EditarDiasDeCheat(_id, chips.Elegidos));
                 _extras.Add(Tema.Texto("Hoy es sábado: puedes cambiar tus días libres. El cambio empieza mañana.", 15));
                 _extras.Add(chips);
+                _extras.Add(Dias.AvisoPara(chips));
                 _extras.Add(guardar);
             }
         }

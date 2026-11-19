@@ -11,6 +11,9 @@ public sealed class Chips<T> : FlexLayout where T : notnull
 
     public event Action? Cambio;
 
+    /// <summary>Se intentó elegir una opción más del máximo: no se quita ninguna sin avisar.</summary>
+    public event Action? Lleno;
+
     public Chips(IEnumerable<(T Valor, string Texto)> opciones, int maximo = 1, IEnumerable<T>? iniciales = null)
     {
         _maximo = maximo;
@@ -53,7 +56,11 @@ public sealed class Chips<T> : FlexLayout where T : notnull
         }
         else
         {
-            if (_elegidos.Count >= _maximo) _elegidos.RemoveAt(0);
+            if (_elegidos.Count >= _maximo)
+            {
+                Lleno?.Invoke();
+                return;
+            }
             _elegidos.Add(valor);
         }
         Pintar();
@@ -75,6 +82,18 @@ public sealed class Chips<T> : FlexLayout where T : notnull
 
 public static class Dias
 {
+    public const string AvisoLleno = "Ya elegiste 2 días libres. Toca uno de ellos para quitarlo y luego elige otro.";
+
+    /// <summary>Texto que aparece cuando se intenta elegir un 3.er día libre y se oculta al cambiar.</summary>
+    public static Label AvisoPara<T>(Chips<T> chips) where T : notnull
+    {
+        var aviso = Tema.Texto(AvisoLleno, 14, Tema.FuenteNegrita, Tema.Miel);
+        aviso.IsVisible = false;
+        chips.Lleno += () => aviso.IsVisible = true;
+        chips.Cambio += () => aviso.IsVisible = false;
+        return aviso;
+    }
+
     /// <summary>Semana de domingo a sábado, como la define la spec.</summary>
     public static IEnumerable<(DayOfWeek, string)> Semana =>
         Enum.GetValues<DayOfWeek>().Select(d => (d, Tema.NombreDia(d)));

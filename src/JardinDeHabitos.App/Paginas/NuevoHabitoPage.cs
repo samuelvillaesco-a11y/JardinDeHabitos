@@ -76,6 +76,7 @@ public sealed class NuevoHabitoPage : ContentPage
                 Tema.Texto("Días libres (hasta 2 por semana)", 17, Tema.FuenteNegrita),
                 Tema.Texto("Esos días no se pide check-in y el árbol descansa en paz. Puedes cambiarlos cada sábado.", 14, color: Tema.HuesoTenue),
                 _dias,
+                Dias.AvisoPara(_dias),
             },
         };
         _aviso = Tema.Parcela(new VerticalStackLayout

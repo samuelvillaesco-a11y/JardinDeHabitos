@@ -90,7 +90,7 @@ Hallazgos (pendientes):
 Hecho: todo lo de "Reglas de diseño confirmadas (Fase 2)". Esquema SQLite v2 (migra v1: nombre libre → categoría, cicatrices → strikes máx. 2, logros viejos → niveles). 123/123 tests Core.
 Probado en emulador: migración de la base real v1, plantar (lista, aviso médico, tiempo previo, especies libres), estante con PIN, check-in roto + plaga + mini-juego, notificación de las 20:00 (disparada a mano con `adb root` + `am broadcast -n org.jardindehabitos.app/crc64003d8bdd0e7a181d.NotificacionesReceiver --ei momento 20`).
 Notas: el manifiesto necesita `USE_BIOMETRIC`; la pantalla de PIN sale negra en capturas (FLAG_SECURE).
-Hallazgos del 2026-11-19 resueltos en Fase 2: 1 (árboles crecían sin check-in), 2 (ya no hay campo de nombre), 3 (el jardín se relee al pasar la medianoche), 4 (logros tempranos y por hábito). Sigue pendiente el 5 (3.er día libre quita el primero sin avisar).
+Hallazgos del 2026-11-19 resueltos en Fase 2: 1 (árboles crecían sin check-in), 2 (ya no hay campo de nombre), 3 (el jardín se relee al pasar la medianoche), 4 (logros tempranos y por hábito). El 5 (3.er día libre quitaba el primero) también quedó resuelto: ahora avisa y no quita nada.
 Las reglas de "Historia (Fases 0-1)" quedan reemplazadas por las de Fase 2 donde choquen.
 Estante de emblemas (commit 0b4bfa8): bronce/plata/oro según estrellas, malditos negros, legendarios rojos/morados/arcoíris; detalle solo al tocar; punto rojo y "Recién conseguidos"; filtros por categoría/rango/fecha que solo muestran Mini-juegos/Malditos/Legendarios después de ganar uno. 132/132 tests.
 Probado también en modo acelerado: 8 días sin visita → "¡Necesita ayuda!" + caracoles; el rescate desbloquea el oculto "Rescate a tiempo" con aviso genérico.
