@@ -11,8 +11,8 @@ namespace JardinDeHabitos.App;
 public static class Notificaciones
 {
     private const string Canal = "tu-jardin";
-    private const string ExtraMomento = "momento";
-    private const int Manana = 9;
+    internal const string ExtraMomento = "momento";
+    internal const int Manana = 9;
     private const int Tarde = 20;
     private static int _siguienteId = 2000;
 
@@ -64,16 +64,16 @@ public static class Notificaciones
         });
     }
 
-    internal static void Revisar(Context context, int momento)
+    internal static void Revisar(int momento)
     {
-        if (context.FilesDir?.AbsolutePath is not { } dir) return;
-        var ruta = Path.Combine(dir, Servicios.NombreBaseDeDatos);
-        if (!File.Exists(ruta)) return;
+        // Sin jardín todavía (la app nunca se abrió) no hay nada que avisar.
+        if (!File.Exists(Path.Combine(FileSystem.AppDataDirectory, Servicios.NombreBaseDeDatos))) return;
 
+        // El receptor corre en el hilo principal del mismo proceso: usa el mismo jardín que la app
+        // (una sola conexión, misma llave, mismo reloj) en vez de abrir otra copia de la base.
         var mensajes = new List<(string Titulo, string Texto)>();
-        using (var store = new SqliteGardenStore(ruta, llave: Servicios.LlaveDeDatos()))
         {
-            var jardin = new GardenService(store, new GrowthStageCalculator());
+            var jardin = Servicios.Jardin;
             var arboles = jardin.Jardin();
 
             foreach (var a in jardin.TomarAvisos()) mensajes.Add(Texto(a));
@@ -91,6 +91,7 @@ public static class Notificaciones
             if (jardin.TomarLogrosNuevos() > 0) mensajes.Add((Avisos.TituloLogro, Avisos.CuerpoLogro));
         }
 
+        var context = Android.App.Application.Context;
         foreach (var (titulo, texto) in mensajes) Mostrar(context, titulo, texto);
     }
 
@@ -130,7 +131,7 @@ public class NotificacionesReceiver : BroadcastReceiver
     {
         if (context is null) return;
         // Un fallo aquí (base ocupada o dañada) no debe cerrar la app en segundo plano.
-        try { Notificaciones.Revisar(context, intent?.GetIntExtra("momento", 9) ?? 9); }
+        try { Notificaciones.Revisar(intent?.GetIntExtra(Notificaciones.ExtraMomento, Notificaciones.Manana) ?? Notificaciones.Manana); }
         catch (Exception ex) { Android.Util.Log.Warn("JardinDeHabitos", $"Notificación falló: {ex}"); }
     }
 }

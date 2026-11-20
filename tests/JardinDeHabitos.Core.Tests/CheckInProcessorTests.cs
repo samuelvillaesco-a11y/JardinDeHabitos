@@ -63,7 +63,8 @@ public class CheckInProcessorTests
         Assert.True(r.EmpezoCuidado);
         Assert.Equal(D.AddDays(3), _estado.FinPlaga);
         Assert.Null(_estado.FinRaices);
-        Assert.Equal(PenaltyLevel.Strike1, CheckInProcessor.Nivel(_estado, D));
+        Assert.True(CheckInProcessor.TienePlaga(_estado, D));
+        Assert.False(CheckInProcessor.TieneRaices(_estado, D));
     }
 
     [Fact]

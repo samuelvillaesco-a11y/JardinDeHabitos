@@ -44,8 +44,8 @@ public sealed class CrearClavePage : ContentPage, IPrivada
             _ => "Elige con qué se abre lo que pongas bajo llave.",
         }, 16));
         pila.Add(Opcion("📱", "Usar el bloqueo de mi teléfono", "La misma huella, PIN o patrón con que desbloqueas el celular. Recomendado.", TipoCandado.Telefono));
-        pila.Add(Opcion("🔢", "Crear un PIN propio", "De 4 a 8 números, distinto al del teléfono.", TipoCandado.Pin));
-        pila.Add(Opcion("✳️", "Dibujar un patrón propio", "Une al menos 4 de los 9 puntos.", TipoCandado.Patron));
+        pila.Add(Opcion("🔢", "Crear un PIN propio", $"De {ClaveLocal.PinMinimo} a {ClaveLocal.PinMaximo} números, distinto al del teléfono.", TipoCandado.Pin));
+        pila.Add(Opcion("✳️", "Dibujar un patrón propio", $"Une al menos {ClaveLocal.PatronMinimo} de los 9 puntos.", TipoCandado.Patron));
         pila.Add(_error);
         if (_motivo == Motivo.PrimeraVez)
         {
@@ -142,8 +142,8 @@ public sealed class CrearClavePage : ContentPage, IPrivada
                 {
                     Tema.Titulo(primero is null ? $"Crea tu {que}" : $"Repite tu {que}", 28),
                     Tema.Texto(tipo == TipoCandado.Pin
-                        ? "De 4 a 8 números. Evita fechas obvias y secuencias como 1234."
-                        : "Une al menos 4 puntos sin levantar el dedo.", 15, color: Tema.HuesoTenue),
+                        ? $"De {ClaveLocal.PinMinimo} a {ClaveLocal.PinMaximo} números. Evita fechas obvias y secuencias como 1234."
+                        : $"Une al menos {ClaveLocal.PatronMinimo} puntos sin levantar el dedo.", 15, color: Tema.HuesoTenue),
                     entrada,
                     aviso,
                     volver,

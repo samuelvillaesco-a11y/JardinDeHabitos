@@ -15,7 +15,6 @@ public sealed class JardinPage : ContentPage, IRefrescable
     };
     private readonly Label _fecha = Tema.Texto("", 15, color: Tema.HuesoTenue);
     private readonly Label _aviso = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
-    private bool _navegando;
     private IDispatcherTimer? _timer;
     private DateOnly _hoyMostrado;
 
@@ -34,7 +33,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         logros.HorizontalOptions = LayoutOptions.End;
         logros.VerticalOptions = LayoutOptions.Start;
         SemanticProperties.SetDescription(logros, "Estante de trofeos");
-        logros.Clicked += async (_, _) => await AbrirEstante();
+        logros.Clicked += async (_, _) => await this.Verificado("Tu estante de trofeos", () => new LogrosPage(), Seguro.Logros);
 
         // El trofeo vive en la esquina, junto al título.
         var encabezado = new Grid { ColumnDefinitions = [new(GridLength.Star), new(GridLength.Auto)] };
@@ -66,7 +65,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
     private Button BotonGaleria()
     {
         var b = Tema.Boton("Galería de etapas (debug)", Colors.Transparent, Tema.HuesoTenue);
-        b.Clicked += async (_, _) => await Abrir(() => new GaleriaPage());
+        b.Clicked += async (_, _) => await this.UnaVez(() => new GaleriaPage());
         return b;
     }
 
@@ -106,22 +105,6 @@ public sealed class JardinPage : ContentPage, IRefrescable
     {
         base.OnDisappearing();
         _timer?.Stop();
-    }
-
-    /// <summary>Abre una página una sola vez aunque el toque llegue doble.</summary>
-    private async Task Abrir(Func<Page> crear)
-    {
-        if (_navegando || Navigation.NavigationStack.LastOrDefault() != this) return;
-        _navegando = true;
-        try { await Navigation.PushAsync(crear()); }
-        finally { _navegando = false; }
-    }
-
-    private async Task AbrirEstante()
-    {
-        if (_navegando) return;
-        if (!await Seguridad.EntrarAsync(this, Seguro.Logros, "Tu estante de trofeos")) return;
-        await Abrir(() => new LogrosPage());
     }
 
     public async void AlVolver()
@@ -194,7 +177,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         var parcela = Tema.Parcela(new VerticalStackLayout { Spacing = 6, Children = { dibujo, pie } });
         SemanticProperties.SetDescription(parcela, $"{v.Especie}. {estado}.");
         var toque = new TapGestureRecognizer();
-        toque.Tapped += async (_, _) => await Abrir(() => new ArbolPage(v.Id));
+        toque.Tapped += async (_, _) => await this.UnaVez(() => new ArbolPage(v.Id));
         parcela.GestureRecognizers.Add(toque);
         return parcela;
     }
@@ -215,7 +198,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         var parcela = Tema.Parcela(contenido, Colors.Transparent, Tema.MusgoClaro);
         parcela.MinimumHeightRequest = 190;
         var toque = new TapGestureRecognizer();
-        toque.Tapped += async (_, _) => await Abrir(() => new NuevoHabitoPage());
+        toque.Tapped += async (_, _) => await this.UnaVez(() => new NuevoHabitoPage());
         parcela.GestureRecognizers.Add(toque);
         return parcela;
     }

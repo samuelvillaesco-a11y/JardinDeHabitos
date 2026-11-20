@@ -17,6 +17,8 @@ public enum MiniJuego
 public sealed class Escena : IDrawable
 {
     private const float SegundosDeRiegoBase = 1.6f;
+    private static readonly Color RaizTallo = Color.FromArgb("#5B5236");
+    private static readonly Color RaizBola = Color.FromArgb("#3E3826");
 
     private sealed class Raiz
     {
@@ -115,10 +117,10 @@ public sealed class Escena : IDrawable
                 canvas.StrokeLineCap = LineCap.Round;
                 foreach (var r in _raices)
                 {
-                    canvas.StrokeColor = Color.FromArgb("#5B5236");
+                    canvas.StrokeColor = RaizTallo;
                     canvas.StrokeSize = g.Escala * 0.02f;
                     canvas.DrawLine(r.Pos.X, r.Pos.Y - g.Escala * 0.05f, r.Pos.X, r.Pos.Y + g.Escala * 0.03f);
-                    canvas.Relleno(Color.FromArgb("#3E3826"));
+                    canvas.Relleno(RaizBola);
                     canvas.FillCircle(r.Pos.X, r.Pos.Y + g.Escala * 0.03f, g.Escala * 0.025f);
                 }
                 break;

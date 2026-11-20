@@ -130,7 +130,7 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
             if (f.Tipo == (int)HabitType.Moderable) stats[Stat.De(Stat.Moderado, cat)] = 1;
             Max(Stat.De(Stat.Racha, cat), f.DiasCrecimiento);
             Max(Stat.RachaMax, f.DiasCrecimiento);
-            stats[$"avisoEtapa:{f.Id}"] = (int)GrowthStageCalculator.EtapaParaDias(f.DiasCrecimiento);
+            stats[$"{GardenService.AvisoEtapa}:{f.Id}"] = (int)GrowthStageCalculator.EtapaParaDias(f.DiasCrecimiento);
             stats[Stat.Plantados] = stats.GetValueOrDefault(Stat.Plantados) + 1;
         }
 

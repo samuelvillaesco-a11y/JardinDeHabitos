@@ -28,11 +28,8 @@ public sealed record VistaArbol(
     bool AsistioHoy,
     IReadOnlyList<DayOfWeek> DiasDeCheat)
 {
-    public PenaltyLevel Penalizacion => Raices ? PenaltyLevel.Strike2 : Plaga ? PenaltyLevel.Strike1 : PenaltyLevel.Ninguna;
     public bool EnCuidado => Plaga || Raices;
 }
-
-public sealed record ResultadoCheckIn(CheckInOutcome Outcome);
 
 public enum MiniJuegoTipo
 {
@@ -70,6 +67,12 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
     private const string UltimoDiaMimo = "ultimoDiaMimo";
     private const string UltimoDiaJardinCompleto = "ultimoDiaJardinCompleto";
     private const string CenizaHabito = "cenizaHabito";
+
+    // Avisos pendientes por árbol (clave + ":" + id).
+    public const string AvisoEtapa = "avisoEtapa";
+    private const string AvisoEvento = "avisoEvento";
+    private const string AvisoPlaga = "avisoPlaga";
+    private const string AvisoMuerte = "avisoMuerte";
     private const string Visto = "visto:";
 
     private static readonly GrowthStage[] EtapasAvisables =
@@ -94,7 +97,7 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
         var r = Buscar(id);
         Cambiar(s =>
         {
-            foreach (var k in new[] { "avisoEvento", "avisoPlaga", "avisoMuerte" }) s.Set($"{k}:{id}", 0);
+            LimpiarAvisos(s, id);
         });
         return Vista(r);
     }
@@ -165,14 +168,14 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
                 var id = r.Habito.Id;
                 var especie = r.Habito.EspecieDeArbol;
                 var etapa = calculadora.CalcularEtapa(r.Habito);
-                if ((int)etapa > s.Get($"avisoEtapa:{id}") && EtapasAvisables.Contains(etapa))
+                if ((int)etapa > s.Get($"{AvisoEtapa}:{id}") && EtapasAvisables.Contains(etapa))
                     avisos.Add(new Aviso(TipoAviso.Etapa, especie, etapa));
-                s.Set($"avisoEtapa:{id}", Math.Max(s.Get($"avisoEtapa:{id}"), (int)etapa));
+                s.Set($"{AvisoEtapa}:{id}", Math.Max(s.Get($"{AvisoEtapa}:{id}"), (int)etapa));
 
-                if (s.Get($"avisoMuerte:{id}") > 0) avisos.Add(new Aviso(TipoAviso.MuertePorAbandono, especie));
-                else if (s.Get($"avisoPlaga:{id}") > 0) avisos.Add(new Aviso(TipoAviso.PlagaPorAbandono, especie));
-                else if (s.Get($"avisoEvento:{id}") > 0) avisos.Add(new Aviso(TipoAviso.MiniEvento, especie));
-                foreach (var k in new[] { "avisoEvento", "avisoPlaga", "avisoMuerte" }) s.Set($"{k}:{id}", 0);
+                if (s.Get($"{AvisoMuerte}:{id}") > 0) avisos.Add(new Aviso(TipoAviso.MuertePorAbandono, especie));
+                else if (s.Get($"{AvisoPlaga}:{id}") > 0) avisos.Add(new Aviso(TipoAviso.PlagaPorAbandono, especie));
+                else if (s.Get($"{AvisoEvento}:{id}") > 0) avisos.Add(new Aviso(TipoAviso.MiniEvento, especie));
+                LimpiarAvisos(s, id);
             }
         });
         return avisos;
@@ -233,7 +236,7 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
                 if (tipo == HabitType.Moderable) s.Set(Stat.De(Stat.Moderado, habito), 1);
                 s.Inc(Stat.Plantados);
                 // El tiempo previo no se anuncia como etapa nueva.
-                s.Set($"avisoEtapa:{h.Id}", (int)calculadora.CalcularEtapa(h));
+                s.Set($"{AvisoEtapa}:{h.Id}", (int)calculadora.CalcularEtapa(h));
                 ActualizarRachas(s, r);
             });
             EvaluarLogros();
@@ -241,7 +244,7 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
         return Vista(r);
     }
 
-    public ResultadoCheckIn CheckIn(Guid id, CheckInResult resultado)
+    public CheckInOutcome CheckIn(Guid id, CheckInResult resultado)
     {
         Sincronizar();
         var r = Buscar(id);
@@ -303,7 +306,7 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
             store.Guardar(r);
             EvaluarLogros();
         });
-        return new ResultadoCheckIn(outcome);
+        return outcome;
     }
 
     public void RegistrarAsistencia(Guid id) => Modificar(id, (r, s) =>
@@ -383,7 +386,7 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
         r.Estado.MiniEvento = MiniEvento.Ninguno;
         s.Inc(Stat.MiniEventos);
         s.Inc(Stat.Bichos, Math.Max(0, bichos));
-        s.Set($"avisoEvento:{id}", 0);
+        s.Set($"{AvisoEvento}:{id}", 0);
     });
 
     public void Borron(Guid id) => Modificar(id, (r, _) => _procesador.Borron(r.Estado));
@@ -499,18 +502,25 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
                 s.Inc(Stat.De(Stat.Libres, r.Habito.Categoria));
                 break;
             case TipoEvento.MiniEvento:
-                s.Set($"avisoEvento:{id}", 1);
+                s.Set($"{AvisoEvento}:{id}", 1);
                 break;
             case TipoEvento.StrikeAbandono:
                 // La Fruta del Fénix es para una recaída declarada, no para un abandono.
                 r.Estado.FenixPendiente = false;
-                s.Set($"avisoPlaga:{id}", 1);
+                s.Set($"{AvisoPlaga}:{id}", 1);
                 break;
             case TipoEvento.MurioPorAbandono:
                 RegistrarMuerte(s, r, ev.Valor, abandono: true);
-                s.Set($"avisoMuerte:{id}", 1);
+                s.Set($"{AvisoMuerte}:{id}", 1);
                 break;
         }
+    }
+
+    private static void LimpiarAvisos(Estadisticas s, Guid id)
+    {
+        s.Set($"{AvisoEvento}:{id}", 0);
+        s.Set($"{AvisoPlaga}:{id}", 0);
+        s.Set($"{AvisoMuerte}:{id}", 0);
     }
 
     private static void RegistrarMuerte(Estadisticas s, HabitRecord r, int diasAntes, bool abandono)
@@ -541,7 +551,6 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
         int a = s.Get($"{prefijo}1"), b = s.Get($"{prefijo}2");
         s.Set($"{prefijo}1", dia);
         s.Set($"{prefijo}2", a);
-        s.Set($"{prefijo}3", b);
         return b > 0 ? b : null;
     }
 

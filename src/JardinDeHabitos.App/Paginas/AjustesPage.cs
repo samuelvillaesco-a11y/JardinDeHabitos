@@ -3,7 +3,6 @@ namespace JardinDeHabitos.App.Paginas;
 /// <summary>Ajustes: música, seguridad, privacidad y "acerca de".</summary>
 public sealed class AjustesPage : ContentPage
 {
-    private bool _navegando;
 
     public AjustesPage()
     {
@@ -36,12 +35,12 @@ public sealed class AjustesPage : ContentPage
                 {
                     Tema.Titulo("Ajustes", 34),
                     Tema.Parcela(filaMusica),
-                    Entrada("🆘 Pedir ayuda", "911, tus jardineros y la Línea de la Vida. Siempre a la mano, sin candado.", () => Abrir(() => new AyudaPage())),
-                    Entrada("👤 Perfil y jardineros", "Tus datos (opcionales) y tus personas de confianza.", AbrirPerfil),
-                    Entrada("🎨 Personalización", "Colores, degradados y escenas para el fondo.", () => Abrir(() => new PersonalizacionPage())),
-                    Entrada("🔒 Seguridad", "Tu candado y qué partes van bajo llave.", AbrirSeguridad),
-                    Entrada("🛡️ Privacidad", "Qué pasa con tus datos (spoiler: nada sale de tu teléfono).", () => Abrir(() => new PrivacidadPage())),
-                    Entrada("🌱 Acerca de", "Versión, licencia y créditos.", () => Abrir(() => new AcercaDePage())),
+                    Entrada("🆘 Pedir ayuda", "911, tus jardineros y la Línea de la Vida. Siempre a la mano, sin candado.", () => this.UnaVez(() => new AyudaPage())),
+                    Entrada("👤 Perfil y jardineros", "Tus datos (opcionales) y tus personas de confianza.", () => this.Verificado("Tu perfil", () => new PerfilPage())),
+                    Entrada("🎨 Personalización", "Colores, degradados y escenas para el fondo.", () => this.UnaVez(() => new PersonalizacionPage())),
+                    Entrada("🔒 Seguridad", "Tu candado y qué partes van bajo llave.", () => this.Verificado("Ajustes de seguridad", () => new SeguridadPage())),
+                    Entrada("🛡️ Privacidad", "Qué pasa con tus datos (spoiler: nada sale de tu teléfono).", () => this.UnaVez(() => new PrivacidadPage())),
+                    Entrada("🌱 Acerca de", "Versión, licencia y créditos.", () => this.UnaVez(() => new AcercaDePage())),
                 },
             },
         };
@@ -65,30 +64,6 @@ public sealed class AjustesPage : ContentPage
         toque.Tapped += async (_, _) => await accion();
         parcela.GestureRecognizers.Add(toque);
         return parcela;
-    }
-
-    private async Task Abrir(Func<Page> crear)
-    {
-        if (_navegando || Navigation.NavigationStack.LastOrDefault() != this) return;
-        _navegando = true;
-        try { await Navigation.PushAsync(crear()); }
-        finally { _navegando = false; }
-    }
-
-    /// <summary>El perfil tiene datos personales: pide verificación para entrar.</summary>
-    private async Task AbrirPerfil()
-    {
-        if (_navegando) return;
-        if (!await Seguridad.VerificarAsync(this, "Tu perfil")) return;
-        await Abrir(() => new PerfilPage());
-    }
-
-    /// <summary>El panel de seguridad siempre pide verificación, aunque los seguros estén apagados.</summary>
-    private async Task AbrirSeguridad()
-    {
-        if (_navegando) return;
-        if (!await Seguridad.VerificarAsync(this, "Ajustes de seguridad")) return;
-        await Abrir(() => new SeguridadPage());
     }
 }
 

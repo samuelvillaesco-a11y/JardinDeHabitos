@@ -128,3 +128,11 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Sin permisos nuevos: llamadas por ACTION_DIAL (el usuario confirma), SMS por ACTION_SENDTO, contactos por ACTION_PICK (solo el contacto elegido; sin READ_CONTACTS). Resultado del selector: `MainActivity.OnActivityResult` → `Telefono.AlVolver`.
 - Esquema SQLite v3: tablas `Perfil` (fila única) y `Jardineros`, cifradas como todo lo demás.
 - Probar en emulador: contacto de prueba con `adb shell content insert --uri content://com.android.contacts/raw_contacts ...`; el marcador abre con 911 y `dumpsys telephony.registry` muestra mCallState=0 (no llama).
+
+## Auditoría y simplificación (2026-11-20)
+- Privacidad: `Pantalla.Actualizar()` calcula FLAG_SECURE según la página visible (`IPrivada`) y el seguro general. Nunca poner/quitar la bandera a mano.
+- Secciones con llave (`IConLlave`: estante, perfil, seguridad, blog) se cierran al volver tras >10 s fuera (`App.Gracia`); si el usuario se verificó con el bloqueo del teléfono mientras tanto (`Bloqueo.UltimoExito`), no cuenta.
+- Tras 20 fallos (`Intentos.ParaSoloRecuperacion`) solo vale el código de recuperación. minSdk 29.
+- Navegación: `this.UnaVez(...)` y `this.Verificado(...)` (Navegar.cs) en vez de banderas `_navegando` por página.
+- Release: solo arm64, R8, TrimMode full; para probar Release en el emulador: `dotnet publish -c Release -p:Emulador=true`. APK x64 de prueba: 16,4 MB (antes 33 MB con dos ABI).
+- Pendiente de la auditoría (no aplicado, más grande o con riesgo): página base común (fondo/privacidad/anuncios), verificación como capa en vez de modal, unificar MiniJuego/MiniJuegoTipo, quitar columnas v1 de HabitoFila, cachear Sincronizar, no reconstruir la cuadrícula del jardín, pasar la llave SQLCipher como bytes (evita KDF en cada apertura), arreglar el arrastre del patrón dentro de ScrollView a nivel de handler, escenas PNG (~800 KB) dibujadas en código, AOT apagado (−3,5 MB pero arranque más lento), mover a un SQLCipher mantenido.
