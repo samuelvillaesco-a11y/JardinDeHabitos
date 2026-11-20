@@ -93,6 +93,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        Apariencia.Aplicar(this);
         AlVolver();
         // Si la pantalla queda abierta al pasar la medianoche, se relee sola.
         _timer = Dispatcher.CreateTimer();

@@ -36,12 +36,19 @@ public sealed class AjustesPage : ContentPage
                 {
                     Tema.Titulo("Ajustes", 34),
                     Tema.Parcela(filaMusica),
+                    Entrada("🎨 Personalización", "Colores, degradados y escenas para el fondo.", () => Abrir(() => new PersonalizacionPage())),
                     Entrada("🔒 Seguridad", "Tu candado y qué partes van bajo llave.", AbrirSeguridad),
                     Entrada("🛡️ Privacidad", "Qué pasa con tus datos (spoiler: nada sale de tu teléfono).", () => Abrir(() => new PrivacidadPage())),
                     Entrada("🌱 Acerca de", "Versión, licencia y créditos.", () => Abrir(() => new AcercaDePage())),
                 },
             },
         };
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        Apariencia.Aplicar(this);
     }
 
     private static View Entrada(string titulo, string detalle, Func<Task> accion)
@@ -139,6 +146,15 @@ public sealed class AcercaDePage : ContentPage
                         {
                             Tema.Texto("Música", 16, Tema.FuenteNegrita, Tema.Hoja),
                             Tema.Texto("\"Forest Ambience\" de TinyWorlds, en dominio público (CC0), vía OpenGameArt.", 14),
+                        },
+                    }),
+                    Tema.Parcela(new VerticalStackLayout
+                    {
+                        Spacing = 4,
+                        Children =
+                        {
+                            Tema.Texto("Escenas de fondo", 16, Tema.FuenteNegrita, Tema.Hoja),
+                            Tema.Texto("Bosque, jardín, casa de campo y suburbio: dibujos vectoriales propios del proyecto (licencia PolyForm Noncommercial).", 14),
                         },
                     }),
                     Tema.Parcela(new VerticalStackLayout
