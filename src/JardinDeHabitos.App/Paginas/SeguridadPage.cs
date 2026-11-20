@@ -33,37 +33,37 @@ public sealed class SeguridadPage : ContentPage
 
     private async Task Pintar()
     {
-        bool tieneClave = await Seguridad.TieneClaveAsync();
+        var tipo = await Seguridad.TipoAsync();
+        bool propio = tipo != TipoCandado.Telefono;
         _pila.Clear();
         _pila.Add(Tema.Titulo("🔒 Seguridad", 30));
+
+        _pila.Add(Tema.Texto("Tu candado", 19, Tema.FuenteTitulo, Tema.Hoja));
+        _pila.Add(Tema.Parcela(new VerticalStackLayout
+        {
+            Spacing = 4,
+            Children =
+            {
+                Tema.Texto(Seguridad.Nombre(tipo), 17, Tema.FuenteNegrita),
+                Tema.Texto(propio
+                    ? "Se guarda solo una huella cifrada (PBKDF2 con sal) en el almacenamiento seguro del teléfono."
+                    : "Se abre con la misma huella, PIN o patrón de tu teléfono.", 14, color: Tema.HuesoTenue),
+            },
+        }));
+        var cambiar = Tema.Boton("Cambiar candado", Tema.MusgoClaro, Tema.Hueso);
+        cambiar.Clicked += async (_, _) => await CambiarCandado();
+        _pila.Add(cambiar);
+
+        _pila.Add(Tema.Texto("Seguros", 19, Tema.FuenteTitulo, Tema.Hoja));
         _pila.Add(Tema.Texto("Toca un seguro para encenderlo o apagarlo. Cada cambio pide confirmar que eres tú.", 15, color: Tema.HuesoTenue));
         _pila.Add(Fila(Seguro.Logros, "Seguro de logros", "Pide verificación para abrir tu estante de trofeos."));
         _pila.Add(Fila(Seguro.Blog, "Seguro de blog botánico", "Pide verificación para abrir tu diario y tu registro de emociones."));
         _pila.Add(Fila(Seguro.General, "Seguro general", "Pide verificación cada vez que abres la app o vuelves a ella, y la oculta en capturas y en apps recientes."));
         _pila.Add(Fila(Seguro.DobleVerificacion, "Doble verificación",
-            tieneClave
-                ? "Pide tu clave de la app y además la huella, PIN o patrón del teléfono."
-                : "Primero crea una clave de la app.",
-            habilitado: tieneClave));
-
-        _pila.Add(Tema.Texto("Clave de la app", 19, Tema.FuenteTitulo, Tema.Hoja));
-        if (tieneClave)
-        {
-            _pila.Add(Tema.Texto("Tienes una clave. Solo se guarda una huella cifrada de ella (PBKDF2 con sal).", 14, color: Tema.HuesoTenue));
-            var cambiar = Tema.Boton("Cambiar clave", Tema.MusgoClaro, Tema.Hueso);
-            cambiar.Clicked += async (_, _) => await CrearClave();
-            var quitar = Tema.Boton("Quitar clave", Colors.Transparent, Tema.HuesoTenue);
-            quitar.Clicked += async (_, _) => await QuitarClave();
-            _pila.Add(cambiar);
-            _pila.Add(quitar);
-        }
-        else
-        {
-            _pila.Add(Tema.Texto("Sin clave, se usa el bloqueo del teléfono (huella, PIN o patrón).", 14, color: Tema.HuesoTenue));
-            var crear = Tema.Boton("Crear clave", Tema.Miel);
-            crear.Clicked += async (_, _) => await CrearClave();
-            _pila.Add(crear);
-        }
+            propio
+                ? "Pide tu PIN o patrón de la app y además la huella, PIN o patrón del teléfono."
+                : "Solo con un PIN o patrón propio.",
+            habilitado: propio));
 
         _pila.Add(Tema.Parcela(new VerticalStackLayout
         {
@@ -131,33 +131,19 @@ public sealed class SeguridadPage : ContentPage
         finally { _ocupado = false; }
     }
 
-    private async Task CrearClave()
+    private async Task CambiarCandado()
     {
         if (_ocupado) return;
         _ocupado = true;
         try
         {
-            // Cambiar una clave existente pide la actual (o el bloqueo, si no hay).
+            // Cambiar el candado pide el actual.
             if (!await Seguridad.VerificarAsync(this, "Confirma que eres tú")) return;
             await Navigation.PushModalAsync(new CrearClavePage(CrearClavePage.Motivo.Ajustes, async () =>
             {
                 await Navigation.PopModalAsync();
                 await Pintar();
             }));
-        }
-        finally { _ocupado = false; }
-    }
-
-    private async Task QuitarClave()
-    {
-        if (_ocupado) return;
-        _ocupado = true;
-        try
-        {
-            if (!await Seguridad.VerificarAsync(this, "Quitar la clave de la app")) return;
-            if (!await DisplayAlertAsync("¿Quitar la clave?", "Se usará solo el bloqueo del teléfono. La doble verificación se apaga.", "Quitar", "Cancelar")) return;
-            await Seguridad.QuitarClaveAsync();
-            await Pintar();
         }
         finally { _ocupado = false; }
     }

@@ -16,9 +16,28 @@ public static class Servicios
         {
             if (_jardin is not null) return _jardin;
             var (archivo, reloj) = Configuracion();
-            _store = new SqliteGardenStore(Path.Combine(FileSystem.AppDataDirectory, archivo));
+            _store = new SqliteGardenStore(Path.Combine(FileSystem.AppDataDirectory, archivo), llave: LlaveDeDatos());
             return _jardin = new GardenService(_store, new GrowthStageCalculator(reloj));
         }
+    }
+
+    private const string ClaveLlave = "datos.llave";
+
+    /// <summary>
+    /// Llave de cifrado de la base: 32 bytes al azar creados la primera vez y guardados en SecureStorage
+    /// (protegido por el Keystore de Android). Nunca sale del teléfono ni depende del PIN.
+    /// </summary>
+    public static string LlaveDeDatos()
+    {
+        // SecureStorage es asíncrono; Task.Run evita bloquear el hilo de la UI esperándolo.
+        return Task.Run(async () =>
+        {
+            var llave = await SecureStorage.Default.GetAsync(ClaveLlave);
+            if (llave is not null) return llave;
+            llave = SqliteGardenStore.NuevaLlave();
+            await SecureStorage.Default.SetAsync(ClaveLlave, llave);
+            return llave;
+        }).GetAwaiter().GetResult();
     }
 
 #if DEBUG

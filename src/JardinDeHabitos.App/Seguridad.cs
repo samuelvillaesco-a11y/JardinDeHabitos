@@ -17,6 +17,7 @@ public static class Seguridad
     private const string ClaveRecuperacion = "seguridad.recuperacion";
     private const string ClaveFallidos = "seguridad.fallidos";
     private const string ClaveUltimoFallo = "seguridad.ultimoFallo";
+    private const string ClaveTipo = "seguridad.tipo";
 
     private static string Clave(Seguro s) => $"seguridad.seguro.{s}";
 
@@ -37,19 +38,49 @@ public static class Seguridad
 
     public static void MarcarBienvenida() => Preferences.Default.Set(ClaveBienvenida, true);
 
-    // ---------- Clave de la app ----------
+    // ---------- Candado: bloqueo del teléfono, PIN propio o patrón propio ----------
+
+    /// <summary>
+    /// Con qué se abre lo que está bajo llave. Por defecto, el bloqueo del teléfono. Una clave de
+    /// texto de versiones anteriores sigue valiendo (tipo Clave).
+    /// </summary>
+    public static async Task<TipoCandado> TipoAsync()
+    {
+        if (!await TieneClaveAsync()) return TipoCandado.Telefono;
+        var t = Preferences.Default.Get(ClaveTipo, (int)TipoCandado.Clave);
+        return Enum.IsDefined(typeof(TipoCandado), t) && t != (int)TipoCandado.Telefono ? (TipoCandado)t : TipoCandado.Clave;
+    }
+
+    public static string Nombre(TipoCandado t) => t switch
+    {
+        TipoCandado.Pin => "PIN propio",
+        TipoCandado.Patron => "Patrón propio",
+        TipoCandado.Clave => "Clave propia",
+        _ => "Bloqueo del teléfono",
+    };
+
+    /// <summary>Usar el mismo bloqueo del teléfono: se borra el secreto propio (y su código de recuperación).</summary>
+    public static async Task UsarBloqueoDelTelefonoAsync()
+    {
+        await QuitarClaveAsync();
+        Preferences.Default.Set(ClaveTipo, (int)TipoCandado.Telefono);
+    }
 
     public static async Task<bool> TieneClaveAsync() => HashDeClave.Leer(await LeerAsync(ClaveHash)) is not null;
 
-    /// <summary>Guarda la clave (solo su hash) y devuelve un código de recuperación nuevo para mostrar UNA vez.</summary>
-    public static async Task<string> CrearClaveAsync(string clave)
+    /// <summary>
+    /// Guarda un PIN, patrón o clave propios (solo su hash PBKDF2 con sal) y devuelve un código de
+    /// recuperación nuevo para mostrar UNA vez.
+    /// </summary>
+    public static async Task<string> CrearSecretoAsync(TipoCandado tipo, string clave)
     {
-        if (ClaveLocal.Problema(clave) is { } p) throw new ArgumentException(p);
+        if (ClaveLocal.Problema(tipo, clave) is { } p) throw new ArgumentException(p);
         var codigo = CodigoDeRecuperacion.Generar();
         var (hClave, hCodigo) = await Task.Run(() =>
             (ClaveLocal.Crear(clave), ClaveLocal.Crear(CodigoDeRecuperacion.Normalizar(codigo))));
         await SecureStorage.Default.SetAsync(ClaveHash, hClave.Serializar());
         await SecureStorage.Default.SetAsync(ClaveRecuperacion, hCodigo.Serializar());
+        Preferences.Default.Set(ClaveTipo, (int)tipo);
         await ReiniciarFallosAsync();
         return codigo;
     }
@@ -117,10 +148,11 @@ public static class Seguridad
     /// </summary>
     public static async Task<bool> VerificarAsync(Page pagina, string titulo)
     {
-        bool tieneClave = await TieneClaveAsync();
+        var tipo = await TipoAsync();
+        bool tieneClave = tipo != TipoCandado.Telefono;
         if (tieneClave)
         {
-            if (!await PedirClavePage.MostrarAsync(pagina.Navigation, titulo)) return false;
+            if (!await PedirClavePage.MostrarAsync(pagina.Navigation, titulo, tipo)) return false;
             if (!Activo(Seguro.DobleVerificacion)) return true;
         }
 

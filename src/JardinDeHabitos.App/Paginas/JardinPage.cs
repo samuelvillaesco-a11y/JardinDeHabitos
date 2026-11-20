@@ -27,16 +27,19 @@ public sealed class JardinPage : ContentPage, IRefrescable
 
         // Solo un trofeo: nada dice qué hay adentro.
         var logros = Tema.Boton("🏆", Tema.MusgoClaro, Tema.Hueso);
-        logros.FontSize = 26;
-        logros.HorizontalOptions = LayoutOptions.Center;
-        logros.WidthRequest = 72;
+        logros.FontSize = 24;
+        logros.WidthRequest = 60;
+        logros.HeightRequest = 56;
+        logros.Padding = 0;
+        logros.HorizontalOptions = LayoutOptions.End;
+        logros.VerticalOptions = LayoutOptions.Start;
         SemanticProperties.SetDescription(logros, "Estante de trofeos");
         logros.Clicked += async (_, _) => await AbrirEstante();
 
-        // Entrada temporal al panel de seguridad (luego vivirá en Ajustes).
-        var seguridad = Tema.Boton("🔒 Seguridad", Colors.Transparent, Tema.HuesoTenue);
-        seguridad.HorizontalOptions = LayoutOptions.Center;
-        seguridad.Clicked += async (_, _) => await AbrirSeguridad();
+        // El trofeo vive en la esquina, junto al título.
+        var encabezado = new Grid { ColumnDefinitions = [new(GridLength.Star), new(GridLength.Auto)] };
+        encabezado.Add(Tema.Titulo("Tu jardín", 34), 0);
+        encabezado.Add(logros, 1);
 
         Content = new ScrollView
         {
@@ -46,12 +49,10 @@ public sealed class JardinPage : ContentPage, IRefrescable
                 Spacing = 14,
                 Children =
                 {
-                    Tema.Titulo("Tu jardín", 34),
+                    encabezado,
                     _fecha,
                     _aviso,
                     _cuadricula,
-                    logros,
-                    seguridad,
 #if DEBUG
                     BotonGaleria(),
                     BotonAcelerado(),
@@ -120,14 +121,6 @@ public sealed class JardinPage : ContentPage, IRefrescable
         if (_navegando) return;
         if (!await Seguridad.EntrarAsync(this, Seguro.Logros, "Tu estante de trofeos")) return;
         await Abrir(() => new LogrosPage());
-    }
-
-    /// <summary>El panel de seguridad siempre pide el bloqueo, aunque los seguros estén apagados.</summary>
-    private async Task AbrirSeguridad()
-    {
-        if (_navegando) return;
-        if (!await Seguridad.VerificarAsync(this, "Ajustes de seguridad")) return;
-        await Abrir(() => new SeguridadPage());
     }
 
     public async void AlVolver()
