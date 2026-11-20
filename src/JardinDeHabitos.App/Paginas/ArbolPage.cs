@@ -364,7 +364,9 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             string msg = v.Raices
                 ? "Le salieron raíces podridas. Hay que cuidarlo cada día hasta que sane; mientras tanto no crece."
                 : "Le cayó una plaga. Defiéndelo durante 3 días; mientras tanto no crece. Mañana es otro día.";
-            await DisplayAlertAsync("Gracias por decirlo", msg, "Cuidarlo");
+            // En un tropiezo, la ayuda queda a un toque.
+            if (await DisplayAlertAsync("Gracias por decirlo", msg + "\n\nSi lo necesitas, pide ayuda: tus jardineros, la Línea de la Vida o el 911.", "Pedir ayuda", "Cuidarlo"))
+                await Navigation.PushAsync(new AyudaPage());
         }
 
         await Avisos.AnunciarLogros(this);

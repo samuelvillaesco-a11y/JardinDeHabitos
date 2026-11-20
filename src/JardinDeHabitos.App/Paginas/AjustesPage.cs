@@ -36,6 +36,8 @@ public sealed class AjustesPage : ContentPage
                 {
                     Tema.Titulo("Ajustes", 34),
                     Tema.Parcela(filaMusica),
+                    Entrada("🆘 Pedir ayuda", "911, tus jardineros y la Línea de la Vida. Siempre a la mano, sin candado.", () => Abrir(() => new AyudaPage())),
+                    Entrada("👤 Perfil y jardineros", "Tus datos (opcionales) y tus personas de confianza.", AbrirPerfil),
                     Entrada("🎨 Personalización", "Colores, degradados y escenas para el fondo.", () => Abrir(() => new PersonalizacionPage())),
                     Entrada("🔒 Seguridad", "Tu candado y qué partes van bajo llave.", AbrirSeguridad),
                     Entrada("🛡️ Privacidad", "Qué pasa con tus datos (spoiler: nada sale de tu teléfono).", () => Abrir(() => new PrivacidadPage())),
@@ -71,6 +73,14 @@ public sealed class AjustesPage : ContentPage
         _navegando = true;
         try { await Navigation.PushAsync(crear()); }
         finally { _navegando = false; }
+    }
+
+    /// <summary>El perfil tiene datos personales: pide verificación para entrar.</summary>
+    private async Task AbrirPerfil()
+    {
+        if (_navegando) return;
+        if (!await Seguridad.VerificarAsync(this, "Tu perfil")) return;
+        await Abrir(() => new PerfilPage());
     }
 
     /// <summary>El panel de seguridad siempre pide verificación, aunque los seguros estén apagados.</summary>
