@@ -6,7 +6,7 @@ namespace JardinDeHabitos.Core;
 public sealed class SqliteGardenStore : IGardenStore, IDisposable
 {
     /// <summary>Versión del esquema que entiende este código (PRAGMA user_version).</summary>
-    public const int VersionActual = 2;
+    public const int VersionActual = 3;
 
     private readonly SQLiteConnection _db;
     private readonly DateOnly _hoyMigracion;
@@ -86,6 +86,9 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
             _db.CreateTable<HabitoFila>();
             _db.CreateTable<EstadisticaFila>();
             _db.CreateTable<NivelFila>();
+            // 2 → 3: perfil y jardineros (tablas nuevas, nada que migrar).
+            _db.CreateTable<PerfilFila>();
+            _db.CreateTable<JardineroFila>();
 
             // Las bases sin versión ya tienen el esquema 1 (o están vacías).
             if (version < 2 && TablaExiste("Logros")) MigrarA2();
@@ -170,6 +173,35 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
 
     public void AgregarNivel(NivelLogro n) =>
         _db.Insert(new NivelFila { LogroId = n.Id, Nivel = n.Nivel, Fecha = n.Fecha.DayNumber });
+
+    public Perfil Perfil()
+    {
+        var f = _db.Find<PerfilFila>(1);
+        return f is null ? new Perfil() : new Perfil(f.Nombre, f.Correo, f.Telefono, f.PesoKg, f.AlturaCm, (ActividadFisica)f.Actividad);
+    }
+
+    public void GuardarPerfil(Perfil p) => _db.InsertOrReplace(new PerfilFila
+    {
+        Id = 1,
+        Nombre = p.Nombre,
+        Correo = p.Correo,
+        Telefono = p.Telefono,
+        PesoKg = p.PesoKg,
+        AlturaCm = p.AlturaCm,
+        Actividad = (int)p.Actividad,
+    });
+
+    public IReadOnlyList<Jardinero> Jardineros() =>
+        [.. _db.Table<JardineroFila>().OrderBy(f => f.Orden).ToList().Select(f => new Jardinero(Guid.Parse(f.Id), f.Nombre, f.Telefono))];
+
+    public void GuardarJardinero(Jardinero j)
+    {
+        var existente = _db.Find<JardineroFila>(j.Id.ToString());
+        int orden = existente?.Orden ?? (_db.Table<JardineroFila>().Count() == 0 ? 0 : _db.Table<JardineroFila>().ToList().Max(f => f.Orden) + 1);
+        _db.InsertOrReplace(new JardineroFila { Id = j.Id.ToString(), Nombre = j.Nombre, Telefono = j.Telefono, Orden = orden });
+    }
+
+    public void EliminarJardinero(Guid id) => _db.Delete<JardineroFila>(id.ToString());
 
     public void Dispose() => _db.Dispose();
 
@@ -321,6 +353,27 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         [Indexed] public string LogroId { get; set; } = "";
         public int Nivel { get; set; }
         public int Fecha { get; set; }
+    }
+
+    [Table("Perfil")]
+    private sealed class PerfilFila
+    {
+        [PrimaryKey] public int Id { get; set; }
+        public string? Nombre { get; set; }
+        public string? Correo { get; set; }
+        public string? Telefono { get; set; }
+        public double? PesoKg { get; set; }
+        public double? AlturaCm { get; set; }
+        public int Actividad { get; set; }
+    }
+
+    [Table("Jardineros")]
+    private sealed class JardineroFila
+    {
+        [PrimaryKey] public string Id { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string Telefono { get; set; } = "";
+        public int Orden { get; set; }
     }
 
     private sealed class LogroViejo

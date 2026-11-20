@@ -410,6 +410,39 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
 
     public void EliminarHabito(Guid id) => store.Eliminar(Buscar(id).Habito.Id);
 
+    // ---------- Perfil y jardineros ----------
+
+    public Perfil Perfil() => store.Perfil();
+
+    public void GuardarPerfil(Perfil perfil)
+    {
+        var limpio = perfil with
+        {
+            Nombre = Vacio(perfil.Nombre),
+            Correo = Vacio(perfil.Correo),
+            Telefono = Vacio(perfil.Telefono),
+        };
+        if (limpio.Problema() is { } p) throw new ArgumentException(p);
+        store.GuardarPerfil(limpio);
+    }
+
+    public IReadOnlyList<Jardinero> Jardineros() => store.Jardineros();
+
+    public Jardinero AgregarJardinero(string nombre, string telefono)
+    {
+        if (store.Jardineros().Count >= Jardinero.Maximo)
+            throw new InvalidOperationException($"Puedes tener hasta {Jardinero.Maximo} jardineros.");
+        var j = Jardinero.Nuevo(nombre, telefono);
+        if (store.Jardineros().Any(x => Jardinero.Limpiar(x.Telefono) == Jardinero.Limpiar(j.Telefono)))
+            throw new InvalidOperationException("Ese número ya está en tus jardineros.");
+        store.GuardarJardinero(j);
+        return j;
+    }
+
+    public void EliminarJardinero(Guid id) => store.EliminarJardinero(id);
+
+    private static string? Vacio(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     // ---------- Internos ----------
 
     /// <summary>Avance diario de todos los árboles + estadísticas de jardín + logros. Idempotente.</summary>
