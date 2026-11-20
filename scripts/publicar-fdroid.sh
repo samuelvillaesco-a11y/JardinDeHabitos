@@ -28,8 +28,30 @@ cp "$APK" "repo/jardin-de-habitos-$version.apk"
 # Textos, capturas y novedades salen del fastlane del repositorio principal.
 rm -rf "metadata/$APP"
 cp -r "$RAIZ/fastlane/metadata/android" "metadata/$APP"
-sed -i '/^CurrentVersion/d' "metadata/$APP.yml"
-printf "CurrentVersion: '%s'\nCurrentVersionCode: %s\n" "$version" "$codigo" >> "metadata/$APP.yml"
+# Metadatos completos. Una entrada en Builds por cada APK del repo: sin ella el índice v2 no lleva
+# las novedades (changelogs/<versionCode>.txt) de esa versión. Nunca poner "disable": fdroid update
+# borra los APK de las compilaciones desactivadas.
+{
+  cat <<'YML'
+Categories:
+  - Sports & Health
+License: MIT
+AuthorName: Jardín de Hábitos
+WebSite: https://github.com/samuelvillaesco-a11y/JardinDeHabitos
+SourceCode: https://github.com/samuelvillaesco-a11y/JardinDeHabitos
+IssueTracker: https://github.com/samuelvillaesco-a11y/JardinDeHabitos/issues
+Changelog: https://github.com/samuelvillaesco-a11y/JardinDeHabitos/releases
+AutoName: Jardín de Hábitos
+
+Builds:
+YML
+  for a in repo/*.apk; do
+    "$AAPT" dump badging "$a" | sed -n "s/^package: name='[^']*' versionCode='\([0-9]*\)' versionName='\([^']*\)'.*/\1 \2/p"
+  done | sort -n | while read -r vc vn; do
+    printf "  - versionName: '%s'\n    versionCode: %s\n    commit: v%s\n\n" "$vn" "$vc" "$vn"
+  done
+  printf "CurrentVersion: '%s'\nCurrentVersionCode: %s\n" "$version" "$codigo"
+} > "metadata/$APP.yml"
 
 "$FDROID_DIR/venv/bin/fdroid" update --pretty
 
