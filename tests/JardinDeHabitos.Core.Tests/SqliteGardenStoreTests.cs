@@ -148,7 +148,7 @@ public sealed class SqliteGardenStoreTests : IDisposable
 
         using var store = new SqliteGardenStore(_ruta, hoy);
 
-        Assert.Equal(2, store.VersionEsquema);
+        Assert.Equal(SqliteGardenStore.VersionActual, store.VersionEsquema);
         var arboles = store.Cargar();
         Assert.Equal(3, arboles.Count);
 

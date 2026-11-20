@@ -13,6 +13,14 @@ public interface IGardenStore
     IReadOnlyList<NivelLogro> NivelesLogro();
     void AgregarNivel(NivelLogro nivel);
 
+    /// <summary>Datos opcionales del usuario (nunca nulo: vacío si no hay nada).</summary>
+    Perfil Perfil();
+    void GuardarPerfil(Perfil perfil);
+
+    IReadOnlyList<Jardinero> Jardineros();
+    void GuardarJardinero(Jardinero jardinero);
+    void EliminarJardinero(Guid id);
+
     /// <summary>Ejecuta varios cambios como uno solo: o se guardan todos o ninguno.</summary>
     void EnTransaccion(Action accion) => accion();
 }

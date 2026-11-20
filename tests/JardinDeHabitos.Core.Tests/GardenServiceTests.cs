@@ -374,4 +374,21 @@ public class GardenServiceTests
     [Fact]
     public void HabitoInexistente_Lanza() =>
         Assert.Throws<KeyNotFoundException>(() => _svc.RegistrarJuego(Guid.NewGuid(), MiniJuegoTipo.Regar));
+
+    [Fact]
+    public void Jardineros_MaximoCincoYSinRepetir()
+    {
+        for (int i = 0; i < 5; i++) _svc.AgregarJardinero($"J{i}", $"81000000{i}0");
+        Assert.Throws<InvalidOperationException>(() => _svc.AgregarJardinero("Otro", "8199999999"));
+        _svc.EliminarJardinero(_svc.Jardineros()[0].Id);
+        Assert.Throws<InvalidOperationException>(() => _svc.AgregarJardinero("Repetido", "81 0000 0010"));
+    }
+
+    [Fact]
+    public void GuardarPerfil_VaciosSeGuardanComoNada_YValida()
+    {
+        _svc.GuardarPerfil(new Perfil(Nombre: "  ", Correo: ""));
+        Assert.Equal(new Perfil(), _svc.Perfil());
+        Assert.Throws<ArgumentException>(() => _svc.GuardarPerfil(new Perfil(Correo: "malo")));
+    }
 }
