@@ -121,3 +121,10 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - `Apariencia.Aplicar(page)` en OnAppearing de Jardín, Blog, Ajustes, Logros y Personalización: envuelve el contenido en `CapaFondo` (fondo hasta los bordes con `SafeAreaEdges.None`; contenido con `SafeAreaRegions.Container`, si no se mete bajo la barra de estado).
 - Créditos de recursos en `ASSETS.md`.
 - Emulador: si se cae con errores de GPU (gfxstream), reiniciarlo sin `-gpu swiftshader_indirect` (con swiftshader da segfault). En `adb shell input text` el `#` hay que escaparlo (`'\#RRGGBB'`).
+
+## Parte 2: perfil, jardineros y ayuda (2026-11-20)
+- Ajustes › 🆘 Pedir ayuda (SIN candado): 911, jardineros (Llamar / Mensaje con texto discreto que no menciona hábito ni app) y Línea de la Vida. Tras "Lo rompí" el aviso ofrece "Pedir ayuda".
+- Ajustes › 👤 Perfil y jardineros (con verificación): nombre, correo, teléfono, peso, altura, actividad física (todo opcional) + hasta 5 jardineros.
+- Sin permisos nuevos: llamadas por ACTION_DIAL (el usuario confirma), SMS por ACTION_SENDTO, contactos por ACTION_PICK (solo el contacto elegido; sin READ_CONTACTS). Resultado del selector: `MainActivity.OnActivityResult` → `Telefono.AlVolver`.
+- Esquema SQLite v3: tablas `Perfil` (fila única) y `Jardineros`, cifradas como todo lo demás.
+- Probar en emulador: contacto de prueba con `adb shell content insert --uri content://com.android.contacts/raw_contacts ...`; el marcador abre con 911 y `dumpsys telephony.registry` muestra mCallState=0 (no llama).

@@ -74,6 +74,12 @@ public sealed class AyudaPage : ContentPage
         Content = new ScrollView { Content = pila };
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        Apariencia.Aplicar(this);
+    }
+
     private async Task Marcar(string numero)
     {
         if (!Telefono.Marcar(numero))
