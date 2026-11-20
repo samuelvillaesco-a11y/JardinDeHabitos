@@ -16,27 +16,20 @@ public static class Bloqueo
     public enum Resultado { Abierto, Cancelado, SinBloqueo }
 
     /// <summary>
-    /// Verdadero mientras el diálogo de bloqueo está abierto. La pantalla de PIN/patrón es otra
-    /// actividad: la app pasa a segundo plano y no debe volver a cerrarse con llave por eso.
+    /// Cuándo fue la última verificación exitosa. La pantalla de PIN del sistema manda la app al
+    /// fondo: si el usuario se verificó mientras tanto, volver no cuenta como haber salido.
     /// </summary>
-    public static bool EnCurso { get; private set; }
+    public static DateTime UltimoExito { get; private set; } = DateTime.MinValue;
 
     /// <summary>¿El teléfono tiene huella, PIN o patrón configurado?</summary>
     public static bool TelefonoTieneBloqueo =>
         Platform.CurrentActivity?.GetSystemService(Context.KeyguardService) is KeyguardManager kg && kg.IsDeviceSecure;
 
-    public static Task<Resultado> PedirAsync() => PedirAsync("Tu estante de trofeos", "Desbloquea para verlo");
-
     public static async Task<Resultado> PedirAsync(string titulo, string subtitulo)
     {
-        EnCurso = true;
-        try { return await Pedir(titulo, subtitulo); }
-        finally
-        {
-            // La actividad del PIN tarda un instante en cerrarse y la app en volver al frente.
-            await Task.Delay(800);
-            EnCurso = false;
-        }
+        var r = await Pedir(titulo, subtitulo);
+        if (r == Resultado.Abierto) UltimoExito = DateTime.UtcNow;
+        return r;
     }
 
     private static Task<Resultado> Pedir(string titulo, string subtitulo)
@@ -44,10 +37,8 @@ public static class Bloqueo
         var actividad = Platform.CurrentActivity;
         if (actividad is null) return Task.FromResult(Resultado.Cancelado);
 
+        // La app pide Android 10 o más (minSdk 29): este diálogo siempre ofrece PIN/patrón del teléfono.
         if (actividad.GetSystemService(Context.KeyguardService) is not KeyguardManager kg || !kg.IsDeviceSecure)
-            return Task.FromResult(Resultado.SinBloqueo);
-        // Android 9 o anterior no ofrece PIN/patrón en este diálogo.
-        if (!OperatingSystem.IsAndroidVersionAtLeast(29))
             return Task.FromResult(Resultado.SinBloqueo);
 
         var tcs = new TaskCompletionSource<Resultado>();

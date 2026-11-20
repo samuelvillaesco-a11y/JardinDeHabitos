@@ -3,7 +3,7 @@ using JardinDeHabitos.Core;
 
 namespace JardinDeHabitos.App;
 
-public enum ResultadoClave { Correcta, Incorrecta, Esperar }
+public enum ResultadoClave { Correcta, Incorrecta, Esperar, SoloRecuperacion }
 
 /// <summary>
 /// Seguridad 100 % local. Los interruptores viven en Preferences; la clave de la app y el código
@@ -27,7 +27,7 @@ public static class Seguridad
     public static void Cambiar(Seguro s, bool activo)
     {
         Preferences.Default.Set(Clave(s), activo);
-        Pantalla.Privada(PantallaDebeSerPrivada);
+        Pantalla.Actualizar();
     }
 
     /// <summary>Con el seguro general, la app no sale en capturas ni en la vista de apps recientes.</summary>
@@ -77,23 +77,29 @@ public static class Seguridad
         if (ClaveLocal.Problema(tipo, clave) is { } p) throw new ArgumentException(p);
         var codigo = CodigoDeRecuperacion.Generar();
         var (hClave, hCodigo) = await Task.Run(() =>
-            (ClaveLocal.Crear(clave), ClaveLocal.Crear(CodigoDeRecuperacion.Normalizar(codigo))));
+            (ClaveLocal.Crear(clave), ClaveLocal.Crear(CodigoDeRecuperacion.Normalizar(codigo), ClaveLocal.IteracionesCodigo)));
         await SecureStorage.Default.SetAsync(ClaveHash, hClave.Serializar());
         await SecureStorage.Default.SetAsync(ClaveRecuperacion, hCodigo.Serializar());
         Preferences.Default.Set(ClaveTipo, (int)tipo);
-        await ReiniciarFallosAsync();
+        ReiniciarFallos();
         return codigo;
     }
 
-    public static async Task QuitarClaveAsync()
+    public static Task QuitarClaveAsync()
     {
         SecureStorage.Default.Remove(ClaveHash);
         SecureStorage.Default.Remove(ClaveRecuperacion);
-        await ReiniciarFallosAsync();
+        ReiniciarFallos();
         Cambiar(Seguro.DobleVerificacion, false);
+        return Task.CompletedTask;
     }
 
-    public static Task<ResultadoClave> ProbarClaveAsync(string? clave) => ProbarAsync(ClaveHash, clave);
+    public static async Task<ResultadoClave> ProbarClaveAsync(string? clave)
+    {
+        int fallidos = int.TryParse(await LeerAsync(ClaveFallidos), out int f) ? f : 0;
+        if (Intentos.SoloRecuperacion(fallidos)) return ResultadoClave.SoloRecuperacion;
+        return await ProbarAsync(ClaveHash, clave);
+    }
 
     public static Task<ResultadoClave> ProbarRecuperacionAsync(string? codigo) =>
         ProbarAsync(ClaveRecuperacion, CodigoDeRecuperacion.Normalizar(codigo));
@@ -114,7 +120,7 @@ public static class Seguridad
         bool ok = await Task.Run(() => ClaveLocal.Verificar(texto, guardado));
         if (ok)
         {
-            await ReiniciarFallosAsync();
+            ReiniciarFallos();
             return ResultadoClave.Correcta;
         }
         int fallidos = (int.TryParse(await LeerAsync(ClaveFallidos), out int f) ? f : 0) + 1;
@@ -123,11 +129,10 @@ public static class Seguridad
         return ResultadoClave.Incorrecta;
     }
 
-    private static async Task ReiniciarFallosAsync()
+    private static void ReiniciarFallos()
     {
         SecureStorage.Default.Remove(ClaveFallidos);
         SecureStorage.Default.Remove(ClaveUltimoFallo);
-        await Task.CompletedTask;
     }
 
     private static async Task<string?> LeerAsync(string clave)
@@ -146,7 +151,16 @@ public static class Seguridad
     /// Verifica al dueño: con clave de la app, se pide la clave; con doble verificación, la clave
     /// y además el bloqueo del teléfono; sin clave, el bloqueo del teléfono.
     /// </summary>
-    public static async Task<bool> VerificarAsync(Page pagina, string titulo)
+    public static Task<bool> VerificarAsync(Page pagina, string titulo)
+    {
+        // Un doble toque no abre dos verificaciones: se comparte la que ya está en curso.
+        if (_verificacion is { IsCompleted: false } enCurso) return enCurso;
+        return _verificacion = Verificar(pagina, titulo);
+    }
+
+    private static Task<bool>? _verificacion;
+
+    private static async Task<bool> Verificar(Page pagina, string titulo)
     {
         var tipo = await TipoAsync();
         bool tieneClave = tipo != TipoCandado.Telefono;

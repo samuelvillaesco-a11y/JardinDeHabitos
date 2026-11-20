@@ -6,7 +6,7 @@ namespace JardinDeHabitos.App.Paginas;
 /// Portada del seguro general: tapa todo el jardín hasta que se verifica al dueño
 /// (clave de la app y/o bloqueo del teléfono). No muestra nada del jardín.
 /// </summary>
-public sealed class CerrojoPage : ContentPage
+public sealed class CerrojoPage : ContentPage, IPrivada
 {
     private readonly Action _alAbrir;
     private bool _pidiendo;
@@ -39,7 +39,7 @@ public sealed class CerrojoPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        Pantalla.Privada(true);
+        Pantalla.Actualizar();
         if (_yaPidio) return;
         _yaPidio = true;
         await Pedir();
@@ -56,7 +56,7 @@ public sealed class CerrojoPage : ContentPage
         {
             if (await Seguridad.VerificarAsync(this, "Jardín de Hábitos"))
             {
-                Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+                Pantalla.Actualizar();
                 _alAbrir();
             }
         }

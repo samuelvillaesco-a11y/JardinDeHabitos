@@ -6,7 +6,7 @@ namespace JardinDeHabitos.App.Paginas;
 /// Panel de seguridad (se entra verificando al dueño). Cada seguro se enciende o apaga solo
 /// después de verificar otra vez: clave de la app, bloqueo del teléfono, o ambos.
 /// </summary>
-public sealed class SeguridadPage : ContentPage
+public sealed class SeguridadPage : ContentPage, IPrivada, IConLlave
 {
     private readonly VerticalStackLayout _pila = new() { Padding = new Thickness(18, 20), Spacing = 14 };
     private bool _ocupado;
@@ -21,14 +21,14 @@ public sealed class SeguridadPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        Pantalla.Privada(true);
+        Pantalla.Actualizar();
         await Pintar();
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+        Pantalla.Actualizar();
     }
 
     private async Task Pintar()

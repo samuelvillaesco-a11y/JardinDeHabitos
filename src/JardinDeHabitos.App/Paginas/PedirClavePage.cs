@@ -6,7 +6,7 @@ namespace JardinDeHabitos.App.Paginas;
 /// Pide la clave de la app (modal). Si se olvidó, se entra con el código de recuperación y se
 /// crea una clave nueva en el momento. Tras varios fallos, hay que esperar.
 /// </summary>
-public sealed class PedirClavePage : ContentPage
+public sealed class PedirClavePage : ContentPage, IPrivada
 {
     private readonly TaskCompletionSource<bool> _resultado = new();
     private readonly TipoCandado _tipo;
@@ -47,14 +47,19 @@ public sealed class PedirClavePage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        Pantalla.Privada(true);
+        Pantalla.Actualizar();
         _entrada.Enfocar();
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+        // Si la cerraron por fuera (p. ej. al volver de segundo plano), quien espera recibe "no".
+        Dispatcher.Dispatch(() =>
+        {
+            if (!Navigation.ModalStack.Contains(this)) _resultado.TrySetResult(false);
+        });
+        Pantalla.Actualizar();
     }
 
     protected override bool OnBackButtonPressed()
@@ -114,6 +119,10 @@ public sealed class PedirClavePage : ContentPage
                     break;
                 case ResultadoClave.Correcta:
                     await Cerrar(true);
+                    break;
+                case ResultadoClave.SoloRecuperacion:
+                    CambiarModo(true);
+                    _error.Text = "Demasiados intentos fallidos. Para entrar, usa tu código de recuperación.";
                     break;
                 case ResultadoClave.Esperar:
                     var espera = await Seguridad.EsperaRestanteAsync();

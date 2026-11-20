@@ -9,20 +9,20 @@ namespace JardinDeHabitos.App.Paginas;
 /// solo si ya hay alguno ganado), con los emblemas en orden alfabético. Los filtros viven en una hoja que
 /// sube desde abajo solo cuando el usuario la pide.
 /// </summary>
-public sealed class LogrosPage : ContentPage
+public sealed class LogrosPage : ContentPage, IPrivada, IConLlave
 {
     // Mientras el estante está abierto: sin capturas y oculto en "apps recientes".
     protected override void OnAppearing()
     {
         base.OnAppearing();
         Apariencia.Aplicar(this);
-        Pantalla.Privada(true);
+        Pantalla.Actualizar();
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+        Pantalla.Actualizar();
     }
 
     private enum Orden { Categoria, NuevosPrimero, Recientes, Antiguos }

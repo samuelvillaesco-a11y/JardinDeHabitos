@@ -5,3 +5,6 @@ obj/
 *.user
 TestResults/
 .superpowers/
+
+# Copias temporales de trabajo (worktrees de agentes)
+.claude/

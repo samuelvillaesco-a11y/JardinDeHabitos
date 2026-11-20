@@ -28,6 +28,7 @@ public class App : Application
                 Pestana(new AjustesPage(), "Ajustes", "⚙️"),
             },
         };
+        pestanas.CurrentPageChanged += (_, _) => Pantalla.Actualizar();
         Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.TabbedPage.SetToolbarPlacement(
             pestanas, Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.ToolbarPlacement.Bottom);
         return pestanas;
@@ -48,30 +49,37 @@ public class App : Application
         Musica.Sonar();
     }
 
+    /// <summary>
+    /// Ausencias breves (el diálogo de huella/PIN del sistema, elegir un contacto) no cierran nada.
+    /// Más tiempo fuera sí: se cierran las secciones con llave y, con el seguro general, toda la app.
+    /// </summary>
+    private static readonly TimeSpan Gracia = TimeSpan.FromSeconds(10);
+
     protected override void OnSleep()
     {
         base.OnSleep();
-        // La pantalla del PIN también manda la app al fondo: eso no cuenta como salir.
-        if (!Bloqueo.EnCurso)
-        {
-            _salioAlFondo = DateTime.UtcNow;
-            Musica.Pausar();
-        }
+        _salioAlFondo = DateTime.UtcNow;
+        Musica.Pausar();
     }
 
     /// <summary>
-    /// Al volver: con el seguro general, se cierra con llave otra vez. Si no, se relee todo
-    /// (la app suele quedar en segundo plano de un día a otro).
+    /// Al volver de una ausencia larga: se cierran las secciones bajo llave y, con el seguro
+    /// general, toda la app. Si no, solo se relee (la app suele quedar abierta de un día a otro).
     /// </summary>
-    protected override void OnResume()
+    protected override async void OnResume()
     {
         base.OnResume();
         Musica.Sonar();
-        bool salio = _salioAlFondo is not null;
+        var salio = _salioAlFondo;
         _salioAlFondo = null;
         if (Windows.FirstOrDefault() is not { } ventana) return;
 
-        if (salio && Seguridad.BienvenidaHecha && Seguridad.Activo(Seguro.General) && ventana.Page is not CerrojoPage)
+        // Si mientras estaba fuera el usuario se verificó con el bloqueo del teléfono, no fue una salida.
+        bool larga = salio is { } t && DateTime.UtcNow - t > Gracia && !(Bloqueo.UltimoExito > t);
+        if (larga && Seguridad.BienvenidaHecha)
+            await CerrarSeccionesConLlave(ventana);
+
+        if (larga && Seguridad.BienvenidaHecha && Seguridad.Activo(Seguro.General) && ventana.Page is not CerrojoPage)
         {
             var anterior = ventana.Page;
             ventana.Page = new CerrojoPage(() =>
@@ -82,6 +90,21 @@ public class App : Application
             return;
         }
         Refrescar(ventana.Page);
+    }
+
+    /// <summary>Cierra modales abiertos y saca de la navegación toda página bajo llave.</summary>
+    private static async Task CerrarSeccionesConLlave(Window ventana)
+    {
+        var raiz = ventana.Page;
+        if (raiz is null) return;
+        while (raiz.Navigation.ModalStack.Count > 0) await raiz.Navigation.PopModalAsync(false);
+        foreach (var pila in (raiz as TabbedPage)?.Children.OfType<NavigationPage>() ?? [])
+        {
+            if (pila.Navigation.NavigationStack.Skip(1).Any(p => p is IConLlave))
+                await pila.PopToRootAsync(false);
+            if (pila.RootPage is IConLlave raizConLlave) raizConLlave.Cerrar();
+        }
+        Pantalla.Actualizar();
     }
 
     private static void Refrescar(Page? pagina)
@@ -99,7 +122,7 @@ public class App : Application
             ventana.Page = new CrearClavePage(CrearClavePage.Motivo.PrimeraVez, () =>
             {
                 Seguridad.MarcarBienvenida();
-                Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+                Pantalla.Actualizar();
                 ventana.Page = Jardin();
                 return Task.CompletedTask;
             });

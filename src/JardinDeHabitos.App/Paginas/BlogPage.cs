@@ -6,7 +6,7 @@ namespace JardinDeHabitos.App.Paginas;
 /// Blog botánico: tu diario personal y el registro de cómo te sientes. Va bajo llave.
 /// (El diario y el registro de emociones llegan en la parte 3; por ahora, la puerta y el candado.)
 /// </summary>
-public sealed class BlogPage : ContentPage
+public sealed class BlogPage : ContentPage, IPrivada, IConLlave
 {
     private bool _abierto;
 
@@ -27,6 +27,7 @@ public sealed class BlogPage : ContentPage
     {
         base.OnAppearing();
         Apariencia.Aplicar(this);
+        Pantalla.Actualizar();
         if (!_abierto && !_verificando) await Abrir();
     }
 
@@ -35,6 +36,12 @@ public sealed class BlogPage : ContentPage
         base.OnDisappearing();
         // Al salir de la pestaña, se vuelve a cerrar con llave.
         if (_verificando) return;
+        Cerrar();
+    }
+
+    /// <summary>Vuelve a cerrar el blog con llave (al salir de la pestaña o al volver de segundo plano).</summary>
+    public void Cerrar()
+    {
         _abierto = false;
         PintarCerrado();
     }
