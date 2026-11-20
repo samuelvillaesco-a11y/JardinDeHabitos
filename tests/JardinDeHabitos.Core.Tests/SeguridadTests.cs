@@ -93,4 +93,41 @@ public class SeguridadTests
         Assert.Equal(TimeSpan.FromHours(1), Intentos.Restante(5, ahora.AddDays(5), ahora));
         Assert.Equal(TimeSpan.Zero, Intentos.Restante(5, ahora.AddMinutes(-1), ahora));
     }
+
+    [Theory]
+    [InlineData("0000")]
+    [InlineData("1234")]
+    [InlineData("4321")]
+    [InlineData("123")]
+    [InlineData("12a4")]
+    [InlineData("123456789")]
+    [InlineData(null)]
+    public void Pin_Debil_TieneProblema(string? pin) => Assert.NotNull(ClaveLocal.Problema(TipoCandado.Pin, pin));
+
+    [Theory]
+    [InlineData("2580")]
+    [InlineData("7391")]
+    [InlineData("19820415")]
+    public void Pin_DeCuatroAOchoDigitos_Sirve(string pin) => Assert.Null(ClaveLocal.Problema(TipoCandado.Pin, pin));
+
+    [Theory]
+    [InlineData("012")]
+    [InlineData("0129")]
+    [InlineData("0110")]
+    [InlineData("")]
+    public void Patron_Invalido_TieneProblema(string patron) => Assert.NotNull(ClaveLocal.Problema(TipoCandado.Patron, patron));
+
+    [Theory]
+    [InlineData("0124")]
+    [InlineData("036785")]
+    public void Patron_DeCuatroPuntosOMas_Sirve(string patron) => Assert.Null(ClaveLocal.Problema(TipoCandado.Patron, patron));
+
+    [Fact]
+    public void Pin_SeGuardaComoHashYSeVerifica()
+    {
+        var h = ClaveLocal.Crear("2580", iteraciones: 1000);
+        Assert.DoesNotContain("2580", h.Serializar());
+        Assert.True(ClaveLocal.Verificar("2580", h));
+        Assert.False(ClaveLocal.Verificar("2581", h));
+    }
 }

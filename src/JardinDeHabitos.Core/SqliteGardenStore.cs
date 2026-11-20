@@ -12,10 +12,21 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
     private readonly DateOnly _hoyMigracion;
 
     /// <param name="hoy">Fecha usada solo para migrar árboles viejos (por defecto, hoy del sistema).</param>
-    public SqliteGardenStore(string rutaArchivo, DateOnly? hoy = null)
+    /// <param name="llave">
+    /// Llave de cifrado (SQLCipher). Con llave, la base se guarda cifrada y una base vieja sin cifrar
+    /// se convierte en el momento. Sin llave (pruebas), la base queda en claro.
+    /// </param>
+    public SqliteGardenStore(string rutaArchivo, DateOnly? hoy = null, string? llave = null)
     {
         _hoyMigracion = hoy ?? DateOnly.FromDateTime(DateTime.Now);
-        _db = new SQLiteConnection(rutaArchivo);
+        if (llave is not null)
+        {
+            if (!EsLlaveValida(llave)) throw new ArgumentException("La llave debe ser hexadecimal (32 a 128 caracteres).", nameof(llave));
+            if (EstaEnClaro(rutaArchivo)) CifrarEnSuLugar(rutaArchivo, llave);
+        }
+        _db = llave is null
+            ? new SQLiteConnection(rutaArchivo)
+            : new SQLiteConnection(new SQLiteConnectionString(rutaArchivo, true, key: llave));
         try
         {
             Migrar();
@@ -28,6 +39,38 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
     }
 
     public int VersionEsquema => _db.ExecuteScalar<int>("PRAGMA user_version");
+
+    /// <summary>Una llave nueva: 32 bytes de azar criptográfico en hexadecimal.</summary>
+    public static string NuevaLlave() => Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
+    private static bool EsLlaveValida(string llave) =>
+        llave.Length is >= 32 and <= 128 && llave.All(Uri.IsHexDigit);
+
+    /// <summary>Una base sin cifrar empieza con "SQLite format 3\0"; una cifrada parece azar.</summary>
+    public static bool EstaEnClaro(string ruta)
+    {
+        if (!File.Exists(ruta) || new FileInfo(ruta).Length < 16) return false;
+        var encabezado = new byte[16];
+        using (var f = File.OpenRead(ruta)) f.ReadExactly(encabezado);
+        return System.Text.Encoding.ASCII.GetString(encabezado) == "SQLite format 3\0";
+    }
+
+    /// <summary>Copia la base en claro a una cifrada (sqlcipher_export) y la reemplaza. Conserva la versión del esquema.</summary>
+    private static void CifrarEnSuLugar(string ruta, string llave)
+    {
+        string temporal = ruta + ".cifrando";
+        File.Delete(temporal);
+        using (var claro = new SQLiteConnection(ruta))
+        {
+            int version = claro.ExecuteScalar<int>("PRAGMA user_version");
+            // La llave es solo hexadecimal (validada arriba); la ruta se escapa.
+            claro.Execute($"ATTACH DATABASE '{temporal.Replace("'", "''")}' AS cifrada KEY '{llave}'");
+            claro.ExecuteScalar<string>("SELECT sqlcipher_export('cifrada')");
+            claro.Execute($"PRAGMA cifrada.user_version = {version}");
+            claro.Execute("DETACH DATABASE cifrada");
+        }
+        File.Move(temporal, ruta, overwrite: true);
+    }
 
     /// <summary>Lleva la base a <see cref="VersionActual"/>. Cada versión nueva agrega un paso aquí.</summary>
     private void Migrar()

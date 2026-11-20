@@ -174,6 +174,44 @@ public sealed class SqliteGardenStoreTests : IDisposable
         Assert.Contains(svc.Estante(), e => e.Def.Id == "mal.leyenda_caida" && e.Nivel == 1);
     }
 
+    [Fact]
+    public void ConLlave_ElArchivoQuedaCifrado_YSinLlaveNoSeLee()
+    {
+        var llave = SqliteGardenStore.NuevaLlave();
+        using (var store = new SqliteGardenStore(_ruta, llave: llave)) store.Guardar(Registro());
+
+        Assert.False(SqliteGardenStore.EstaEnClaro(_ruta));
+        Assert.DoesNotContain("Naranjo", System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(_ruta)));
+        Assert.ThrowsAny<Exception>(() => new SqliteGardenStore(_ruta, llave: SqliteGardenStore.NuevaLlave()));
+
+        using var otra = new SqliteGardenStore(_ruta, llave: llave);
+        Assert.Equal("Naranjo", Assert.Single(otra.Cargar()).Habito.EspecieDeArbol);
+    }
+
+    [Fact]
+    public void BaseEnClaro_SeCifraAlAbrirConLlave_SinPerderDatos()
+    {
+        var r = Registro();
+        using (var store = new SqliteGardenStore(_ruta))
+        {
+            store.Guardar(r);
+            store.GuardarEstadisticas(new Dictionary<string, int> { ["racha:Azucares"] = 42 });
+        }
+        Assert.True(SqliteGardenStore.EstaEnClaro(_ruta));
+
+        var llave = SqliteGardenStore.NuevaLlave();
+        using var cifrada = new SqliteGardenStore(_ruta, llave: llave);
+
+        Assert.False(SqliteGardenStore.EstaEnClaro(_ruta));
+        Assert.Equal(SqliteGardenStore.VersionActual, cifrada.VersionEsquema);
+        Assert.Equal(r.Habito.Id, Assert.Single(cifrada.Cargar()).Habito.Id);
+        Assert.Equal(42, cifrada.Estadisticas()["racha:Azucares"]);
+    }
+
+    [Fact]
+    public void LlaveInvalida_Lanza() =>
+        Assert.Throws<ArgumentException>(() => new SqliteGardenStore(_ruta, llave: "x' ; DROP TABLE Habitos; --"));
+
     private void CrearBaseV1()
     {
         using var db = new SQLite.SQLiteConnection(_ruta);

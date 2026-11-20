@@ -33,7 +33,40 @@ public static class ClaveLocal
     private const int BytesSal = 16;
     private const int BytesHash = 32;
 
-    /// <summary>Por qué una clave no sirve, o null si sirve.</summary>
+    public const int PinMinimo = 4;
+    public const int PinMaximo = 8;
+    public const int PatronMinimo = 4;
+
+    /// <summary>Por qué un secreto no sirve para ese tipo de candado, o null si sirve.</summary>
+    public static string? Problema(TipoCandado tipo, string? secreto) => tipo switch
+    {
+        TipoCandado.Pin => ProblemaPin(secreto),
+        TipoCandado.Patron => ProblemaPatron(secreto),
+        TipoCandado.Clave => Problema(secreto),
+        _ => "El bloqueo del teléfono no usa un secreto propio.",
+    };
+
+    private static string? ProblemaPin(string? pin)
+    {
+        if (string.IsNullOrEmpty(pin) || !pin.All(char.IsAsciiDigit))
+            return "El PIN solo lleva números.";
+        if (pin.Length is < PinMinimo or > PinMaximo)
+            return $"El PIN lleva de {PinMinimo} a {PinMaximo} números.";
+        if (pin.Distinct().Count() == 1) return "El PIN no puede ser un solo número repetido, como 0000.";
+        if (EsSecuencia(pin)) return "El PIN no puede ser una secuencia como 1234.";
+        return null;
+    }
+
+    /// <summary>Un patrón se guarda como los puntos tocados en orden (0 a 8, de izquierda a derecha y de arriba abajo).</summary>
+    private static string? ProblemaPatron(string? patron)
+    {
+        if (string.IsNullOrEmpty(patron) || !patron.All(c => c is >= '0' and <= '8') || patron.Distinct().Count() != patron.Length)
+            return "Ese patrón no es válido. Vuelve a dibujarlo.";
+        if (patron.Length < PatronMinimo) return $"Une al menos {PatronMinimo} puntos.";
+        return null;
+    }
+
+    /// <summary>Por qué una clave de texto no sirve, o null si sirve.</summary>
     public static string? Problema(string? clave)
     {
         if (string.IsNullOrEmpty(clave) || clave.Length < LargoMinimo)
