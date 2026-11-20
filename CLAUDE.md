@@ -114,3 +114,10 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - OJO patrón: un GraphicsView dentro de ScrollView pierde el arrastre en Android (aunque Orientation = Neither): las pantallas de patrón no usan ScrollView.
 - Licencia MIT en `LICENSE`. Repo privado hasta terminar README con capturas y pulir todo.
 - IMPORTANTE (2026-11-20): un APK Release de compilación incremental cerró la app en el teléfono al abrir ("Invalid compressed assembly descriptor index"). Antes de instalar en el teléfono: `rm -rf src/*/bin src/*/obj` y `dotnet publish -c Release` desde cero; luego abrirla y revisar `adb logcat -b crash`.
+
+## Personalización (2026-11-20)
+- Ajustes › 🎨 Personalización: colores calmantes, degradados predefinidos, degradado propio de 2 colores, selector de color (tono/saturación/brillo o #RRGGBB) y 4 escenas SVG propias (`Resources/Images/escena_*.svg`, BaseSize 360×640).
+- `Core/Apariencia/Fondo.cs`: `Fondo` (guardado en Preferences `apariencia.fondo`), `Paleta`, `ColorHex`, `Contraste` (WCAG). Encima del fondo va un velo verde musgo con la opacidad mínima para contraste ≥ 4.5:1 del texto claro.
+- `Apariencia.Aplicar(page)` en OnAppearing de Jardín, Blog, Ajustes, Logros y Personalización: envuelve el contenido en `CapaFondo` (fondo hasta los bordes con `SafeAreaEdges.None`; contenido con `SafeAreaRegions.Container`, si no se mete bajo la barra de estado).
+- Créditos de recursos en `ASSETS.md`.
+- Emulador: si se cae con errores de GPU (gfxstream), reiniciarlo sin `-gpu swiftshader_indirect` (con swiftshader da segfault). En `adb shell input text` el `#` hay que escaparlo (`'\#RRGGBB'`).

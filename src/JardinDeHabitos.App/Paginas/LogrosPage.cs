@@ -15,6 +15,7 @@ public sealed class LogrosPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        Apariencia.Aplicar(this);
         Pantalla.Privada(true);
     }
 

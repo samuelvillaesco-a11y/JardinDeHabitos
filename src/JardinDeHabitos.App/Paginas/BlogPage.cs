@@ -26,6 +26,7 @@ public sealed class BlogPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        Apariencia.Aplicar(this);
         if (!_abierto && !_verificando) await Abrir();
     }
 
