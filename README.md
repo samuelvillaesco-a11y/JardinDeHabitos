@@ -72,7 +72,7 @@ El código es abierto precisamente para que cualquiera pueda comprobarlo.
 
 Jardín de Hábitos tiene su propio repositorio F-Droid. Agrégalo una vez y F-Droid te avisará de cada versión:
 
-1. En el teléfono, abre **[este enlace](https://samuelvillaesco-a11y.github.io/jardin-fdroid/repo?fingerprint=E3DDD5419D3C0CA7F79BC898A5368E2B015B164493F84846A09DE86A890FE92F)** (F-Droid te pregunta si quieres agregar el repositorio), o en F-Droid ve a *Ajustes › Repositorios › +* y pega:
+1. En el teléfono, toca **[este enlace](https://fdroid.link/#https://samuelvillaesco-a11y.github.io/jardin-fdroid/repo?fingerprint=E3DDD5419D3C0CA7F79BC898A5368E2B015B164493F84846A09DE86A890FE92F)** (F-Droid te pregunta si quieres agregar el repositorio), o en F-Droid ve a *Ajustes › Repositorios › +* y pega:
 
    ```
    https://samuelvillaesco-a11y.github.io/jardin-fdroid/repo?fingerprint=E3DDD5419D3C0CA7F79BC898A5368E2B015B164493F84846A09DE86A890FE92F
