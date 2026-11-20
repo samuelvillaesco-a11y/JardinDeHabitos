@@ -85,7 +85,7 @@ public sealed class PerfilTests : IDisposable
         }
 
         using var nueva = new SqliteGardenStore(_ruta);
-        Assert.Equal(3, nueva.VersionEsquema);
+        Assert.Equal(SqliteGardenStore.VersionActual, nueva.VersionEsquema);
         Assert.Equal(7, nueva.Estadisticas()["x"]);
         Assert.Equal(new Perfil(), nueva.Perfil());
         Assert.Empty(nueva.Jardineros());

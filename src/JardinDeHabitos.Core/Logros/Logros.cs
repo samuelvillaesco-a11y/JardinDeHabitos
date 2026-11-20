@@ -115,6 +115,7 @@ public static class Stat
     public const string CuidadosTotales = "cuidadosTotales";
     public const string AsistenciasTotales = "asistenciasTotales";
     public const string Replantes = "replantes";
+    public const string DiasEnBlog = "diasEnBlog";
 
     // Ocultos (mini-juegos).
     public const string Ramas = "ramas";

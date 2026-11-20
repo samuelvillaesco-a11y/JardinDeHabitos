@@ -38,6 +38,7 @@ Dejar un hábito (alcohol, cigarro, apuestas, pornografía, azúcar, pantallas�
 - **12 hábitos de una lista** (sin escribir nada): los más dañinos (apuestas, pornografía, sustancias) solo se dejan por completo; otros se pueden moderar con días libres. Alcohol y sustancias muestran un aviso médico antes de empezar.
 - **Logros en tres niveles** (bronce, plata, oro): generales, propios de cada hábito (10 o más por hábito) y algunos que solo descubrirás jugando.
 - **Mini-juegos con gestos:** regar, podar, quitar bichos, sacar raíces podridas.
+- **Blog botánico (bajo llave):** tu diario y un registro de un minuto al día: ánimo, ganas, emociones, qué las detonó y síntomas. Gráficas de cómo vas (ánimo, ganas, mapa de síntomas) y lo que más se repite. Los síntomas salen de escalas clínicas (Minnesota, CIWA-Ar, COWS) según tus árboles, y las señales de alarma te llevan directo a la Línea de la Vida o al 911.
 - **Candado a tu gusto:** el mismo bloqueo del teléfono, un PIN propio o un patrón propio, para el estante de logros, el blog o toda la app.
 - **Pedir ayuda sin candado:** botón de 911, tus "jardineros" (personas de confianza) y la Línea de la Vida. Widget de pantalla de inicio para llamar a tu jardinero con un toque.
 - **Música tranquila de bosque** (se apaga en Ajustes) y **fondos personalizables** en tonos calmantes.
@@ -89,7 +90,7 @@ El APK queda en `src/JardinDeHabitos.App/bin/Release/net10.0-android/publish/`. 
 
 ## Fundamentos médicos
 
-Las reglas y los tiempos se basan en fuentes acreditadas; el detalle y los enlaces están en [`docs/superpowers/specs/2026-11-19-jardin-secreto-logros-design.md`](docs/superpowers/specs/2026-11-19-jardin-secreto-logros-design.md).
+Las reglas y los tiempos se basan en fuentes acreditadas; el detalle y los enlaces están en [`docs/superpowers/specs/2026-11-19-jardin-secreto-logros-design.md`](docs/superpowers/specs/2026-11-19-jardin-secreto-logros-design.md) (jardín y logros) y [`docs/superpowers/specs/2026-11-20-blog-botanico-design.md`](docs/superpowers/specs/2026-11-20-blog-botanico-design.md) (blog: escalas de síntomas, alertas y tiempos de abstinencia).
 
 > **Esta app no sustituye ayuda profesional.** Dejar de golpe el alcohol o ciertos medicamentos después de un uso diario puede ser peligroso: habla con un médico. En México: Línea de la Vida **800 911 2000** (gratis, 24 h). Urgencias: **911**.
 

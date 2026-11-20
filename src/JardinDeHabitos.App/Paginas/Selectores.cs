@@ -73,7 +73,7 @@ public sealed class Chips<T> : FlexLayout where T : notnull
         {
             bool activo = _elegidos.Contains(valor);
             chip.Background = activo ? Tema.Hoja : Colors.Transparent;
-            chip.Stroke = activo ? Tema.Hoja : Tema.MusgoClaro;
+            chip.Stroke = activo ? Tema.Hoja : Tema.HuesoTenue.WithAlpha(0.4f);
             texto.TextColor = activo ? Tema.Musgo : Tema.Hueso;
             SemanticProperties.SetDescription(chip, $"{texto.Text}{(activo ? ", elegido" : "")}");
         }
@@ -98,4 +98,74 @@ public static class Dias
     /// <summary>Semana de domingo a sábado, como la define la spec.</summary>
     public static IEnumerable<(DayOfWeek, string)> Semana =>
         Enum.GetValues<DayOfWeek>().Select(d => (d, Tema.NombreDia(d)));
+}
+
+/// <summary>
+/// Escala de toques (ánimo 1–5, ganas o síntomas 0–4). Tocar el valor elegido lo quita (sin respuesta).
+/// Debajo se lee en palabras lo elegido, así el número nunca va solo.
+/// </summary>
+public sealed class Escala : VerticalStackLayout
+{
+    private readonly int _primero;
+    private readonly string[] _palabras;
+    private readonly List<(Border Punto, Label Texto)> _puntos = [];
+    private readonly Label _lectura;
+    private readonly string _nombre;
+
+    public event Action? Cambio;
+
+    public int? Valor { get; private set; }
+
+    public Escala(string nombre, string[] simbolos, string[] palabras, int primero, int? inicial, double tamano = 44)
+    {
+        _nombre = nombre;
+        _primero = primero;
+        _palabras = palabras;
+        Valor = inicial;
+        Spacing = 4;
+        var fila = new HorizontalStackLayout { Spacing = 8 };
+        for (int i = 0; i < simbolos.Length; i++)
+        {
+            int valor = primero + i;
+            var texto = Tema.Texto(simbolos[i], simbolos[i].Length > 2 ? 22 : 16, Tema.FuenteNegrita);
+            texto.HorizontalTextAlignment = TextAlignment.Center;
+            texto.VerticalTextAlignment = TextAlignment.Center;
+            var punto = new Border
+            {
+                Content = texto,
+                WidthRequest = tamano,
+                HeightRequest = tamano,
+                StrokeShape = new RoundRectangle { CornerRadius = tamano / 2 },
+                StrokeThickness = 2,
+            };
+            var toque = new TapGestureRecognizer();
+            toque.Tapped += (_, _) =>
+            {
+                Valor = Valor == valor ? null : valor;
+                Pintar();
+                Cambio?.Invoke();
+            };
+            punto.GestureRecognizers.Add(toque);
+            _puntos.Add((punto, texto));
+            fila.Children.Add(punto);
+        }
+        _lectura = Tema.Texto("", 13, color: Tema.HuesoTenue);
+        Children.Add(fila);
+        Children.Add(_lectura);
+        Pintar();
+    }
+
+    private void Pintar()
+    {
+        for (int i = 0; i < _puntos.Count; i++)
+        {
+            bool activo = Valor == _primero + i;
+            var (punto, texto) = _puntos[i];
+            punto.Background = activo ? Tema.Miel : Colors.Transparent;
+            punto.Stroke = activo ? Tema.Miel : Tema.HuesoTenue.WithAlpha(0.4f);
+            texto.TextColor = activo ? Tema.Musgo : Tema.Hueso;
+            SemanticProperties.SetDescription(punto, $"{_nombre}: {_palabras[i]}{(activo ? ", elegido" : "")}");
+        }
+        _lectura.Text = Valor is { } v ? _palabras[v - _primero] : "Sin responder";
+    }
 }

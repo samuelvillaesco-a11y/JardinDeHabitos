@@ -6,7 +6,7 @@ namespace JardinDeHabitos.Core;
 public sealed class SqliteGardenStore : IGardenStore, IDisposable
 {
     /// <summary>Versión del esquema que entiende este código (PRAGMA user_version).</summary>
-    public const int VersionActual = 3;
+    public const int VersionActual = 4;
 
     private readonly SQLiteConnection _db;
     private readonly DateOnly _hoyMigracion;
@@ -89,6 +89,8 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
             // 2 → 3: perfil y jardineros (tablas nuevas, nada que migrar).
             _db.CreateTable<PerfilFila>();
             _db.CreateTable<JardineroFila>();
+            // 3 → 4: blog botánico (tabla nueva).
+            _db.CreateTable<DiarioFila>();
 
             // Las bases sin versión ya tienen el esquema 1 (o están vacías).
             if (version < 2 && TablaExiste("Logros")) MigrarA2();
@@ -202,6 +204,39 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
     }
 
     public void EliminarJardinero(Guid id) => _db.Delete<JardineroFila>(id.ToString());
+
+    public IReadOnlyList<EntradaDiario> Diario() =>
+        [.. _db.Table<DiarioFila>().OrderBy(f => f.Dia).ToList().Select(f => new EntradaDiario(
+            DateOnly.FromDayNumber(f.Dia), f.Animo, f.Ganas,
+            Enum.GetValues<Emocion>().Where(e => (f.Emociones & (1 << (int)e)) != 0).ToHashSet(),
+            Enum.GetValues<Detonante>().Where(d => (f.Detonantes & (1 << (int)d)) != 0).ToHashSet(),
+            LeerSintomas(f.Sintomas), f.Nota))];
+
+    public void GuardarEntrada(EntradaDiario e) => _db.InsertOrReplace(new DiarioFila
+    {
+        Dia = e.Dia.DayNumber,
+        Animo = e.Animo,
+        Ganas = e.Ganas,
+        Emociones = e.EmocionesO.Aggregate(0, (m, x) => m | (1 << (int)x)),
+        Detonantes = e.DetonantesO.Aggregate(0, (m, x) => m | (1 << (int)x)),
+        Sintomas = string.Join(',', e.SintomasO.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key).Select(kv => $"{(int)kv.Key}:{kv.Value}")),
+        Nota = e.Nota,
+    });
+
+    public void EliminarEntrada(DateOnly dia) => _db.Delete<DiarioFila>(dia.DayNumber);
+
+    /// <summary>"síntoma:valor,..." con el número del enum (los nombres pueden cambiar; los números no).</summary>
+    private static Dictionary<Sintoma, int> LeerSintomas(string? texto)
+    {
+        var r = new Dictionary<Sintoma, int>();
+        foreach (var par in (texto ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var p = par.Split(':');
+            if (p.Length == 2 && int.TryParse(p[0], out int s) && int.TryParse(p[1], out int v) && Enum.IsDefined((Sintoma)s))
+                r[(Sintoma)s] = Math.Clamp(v, 0, 4);
+        }
+        return r;
+    }
 
     public void Dispose() => _db.Dispose();
 
@@ -374,6 +409,18 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         public string Nombre { get; set; } = "";
         public string Telefono { get; set; } = "";
         public int Orden { get; set; }
+    }
+
+    [Table("Diario")]
+    private sealed class DiarioFila
+    {
+        [PrimaryKey] public int Dia { get; set; }
+        public int? Animo { get; set; }
+        public int? Ganas { get; set; }
+        public int Emociones { get; set; }
+        public int Detonantes { get; set; }
+        public string Sintomas { get; set; } = "";
+        public string? Nota { get; set; }
     }
 
     private sealed class LogroViejo

@@ -7,6 +7,7 @@ public sealed class InMemoryGardenStore : IGardenStore
     private readonly Dictionary<string, int> _stats = [];
     private readonly List<NivelLogro> _niveles = [];
     private readonly Dictionary<Guid, Jardinero> _jardineros = [];
+    private readonly SortedDictionary<DateOnly, EntradaDiario> _diario = [];
     private Perfil _perfil = new();
 
     public IReadOnlyList<HabitRecord> Cargar() => [.. _habitos.Values.OrderBy(r => r.Orden)];
@@ -26,4 +27,7 @@ public sealed class InMemoryGardenStore : IGardenStore
     public IReadOnlyList<Jardinero> Jardineros() => [.. _jardineros.Values];
     public void GuardarJardinero(Jardinero jardinero) => _jardineros[jardinero.Id] = jardinero;
     public void EliminarJardinero(Guid id) => _jardineros.Remove(id);
+    public IReadOnlyList<EntradaDiario> Diario() => [.. _diario.Values];
+    public void GuardarEntrada(EntradaDiario entrada) => _diario[entrada.Dia] = entrada;
+    public void EliminarEntrada(DateOnly dia) => _diario.Remove(dia);
 }

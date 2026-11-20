@@ -107,7 +107,7 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 
 ## Parte 1 + candados + cifrado (2026-11-19)
 - Pestañas abajo (TabbedPage, ToolbarPlacement.Bottom): Jardín · Blog botánico · Ajustes. El trofeo vive en la esquina del jardín.
-- Ajustes: música (on/off), Seguridad (siempre pide verificación), Privacidad, Acerca de. Blog: por ahora solo la puerta con llave (diario y emociones llegan en la parte 3).
+- Ajustes: música (on/off), Seguridad (siempre pide verificación), Privacidad, Acerca de. Blog: ver "Parte 3".
 - Candado a elegir (primera vez y en Seguridad): bloqueo del teléfono (por defecto), PIN propio (4-8 dígitos) o patrón propio (3×3, mín. 4 puntos). Solo hash PBKDF2. Claves de texto viejas siguen valiendo (tipo Clave).
 - Base cifrada con SQLCipher (`sqlite-net-sqlcipher`); llave aleatoria en SecureStorage (`datos.llave`). Una base en claro se cifra al abrirla.
 - Música: "Forest Ambience" de TinyWorlds (CC0, OpenGameArt) en `Resources/Raw/bosque.ogg`, MediaPlayer en bucle al 35 %.
@@ -143,3 +143,11 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - APK en GitHub Releases (no dentro del código). F-Droid oficial no acepta hoy apps .NET MAUI (la carga de trabajo Android viene precompilada); ruta prevista: IzzyOnDroid, que toma el APK de Releases. Metadatos en `fastlane/metadata/android/es-MX/`.
 - Verificación final en emulador (Release recortada): arreglados el robo de arrastres por el deslizamiento entre pestañas (`SetIsSwipePagingEnabled(false)`) y FLAG_SECURE pegado tras la bienvenida (`Pantalla.Actualizar` encola con Dispatcher).
 - Al subir versión: incrementar `ApplicationVersion` y `ApplicationDisplayVersion`, agregar `fastlane/.../changelogs/<versionCode>.txt`.
+
+## Parte 3: blog botánico (2026-11-20, v1.1)
+- Spec y fuentes: `docs/superpowers/specs/2026-11-20-blog-botanico-design.md`. Core en `src/JardinDeHabitos.Core/Diario/` (`EntradaDiario`, `CatalogoDiario`, `ResumenDiario`); esquema v4, tabla `Diario` (una fila por día, emociones/detonantes como máscara de bits, síntomas "num:valor"; los números del enum no se cambian).
+- Registro unificado (no por árbol): ánimo 1–5, ganas 0–4 (MNWS), emociones, detonantes (Marlatt), síntomas 0–4 según árboles plantados, nota. Alertas: autolesión → crisis; alucinaciones/confusión/convulsiones → 911; temblor/sudor/taquicardia ≥3 → médico hoy. Sin puntajes CIWA/COWS.
+- `EntradaPage` es modal (el relock cierra modales); `BlogPage` usa `_escribiendo` para no cerrarse al abrirla.
+- Gráficas en `Dibujo/Graficas.cs` (GraphicsView, toque = guía y lectura). Ánimo y ganas en gráficas separadas (nunca doble eje). Mapa por día hasta 30 días, por semana en 3 meses.
+- Logro "gen.blog" (Cuaderno de raíces) 7/30/66 días con `Stat.DiasEnBlog` (máximo, no baja al borrar).
+- Probar en emulador con días pasados: `adb root`, `settings put global auto_time 0`, `date MMDDhhmmYYYY.ss`; al terminar `auto_time 1`. Para capturas del blog (FLAG_SECURE) se compiló una versión temporal sin la bandera y se revirtió con `git checkout`: nunca commitearla.
