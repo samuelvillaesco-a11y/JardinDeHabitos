@@ -28,6 +28,12 @@ public static class ClaveLocal
     /// </summary>
     public const int Iteraciones = 600_000;
 
+    /// <summary>
+    /// El código de recuperación es azar de ~80 bits: no necesita el costo que sí necesita un PIN
+    /// de 4 dígitos. Con menos iteraciones, crear el candado tarda la mitad.
+    /// </summary>
+    public const int IteracionesCodigo = 10_000;
+
     public const int LargoMinimo = 6;
     public const int LargoMaximo = 64;
     private const int BytesSal = 16;
@@ -132,6 +138,14 @@ public static class CodigoDeRecuperacion
 public static class Intentos
 {
     public const int Libres = 5;
+
+    /// <summary>
+    /// Tras tantos fallos seguidos, el PIN o patrón ya no se acepta: solo el código de recuperación.
+    /// Así mover el reloj del teléfono para saltarse las esperas no sirve para probar los 10 000 PIN.
+    /// </summary>
+    public const int ParaSoloRecuperacion = 20;
+
+    public static bool SoloRecuperacion(int fallidos) => fallidos >= ParaSoloRecuperacion;
 
     public static TimeSpan Espera(int fallidos)
     {

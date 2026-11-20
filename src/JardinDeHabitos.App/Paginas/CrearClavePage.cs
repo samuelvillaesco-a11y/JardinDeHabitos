@@ -6,7 +6,7 @@ namespace JardinDeHabitos.App.Paginas;
 /// Elegir el candado: el mismo bloqueo del teléfono (por defecto), un PIN propio o un patrón propio.
 /// Al crear un PIN o patrón se pide dos veces y se muestra UNA vez el código de recuperación.
 /// </summary>
-public sealed class CrearClavePage : ContentPage
+public sealed class CrearClavePage : ContentPage, IPrivada
 {
     public enum Motivo { PrimeraVez, Ajustes, Recuperacion }
 
@@ -27,7 +27,7 @@ public sealed class CrearClavePage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        Pantalla.Privada(true);
+        Pantalla.Actualizar();
     }
 
     // La primera vez y al recuperar, "atrás" no se salta la pantalla.

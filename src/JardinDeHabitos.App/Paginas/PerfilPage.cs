@@ -7,7 +7,7 @@ namespace JardinDeHabitos.App.Paginas;
 /// Perfil opcional y jardineros. Todo es opcional y se guarda cifrado solo en el teléfono.
 /// Se abre desde Ajustes, previa verificación (son datos personales).
 /// </summary>
-public sealed class PerfilPage : ContentPage
+public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
 {
     private readonly Entry _nombre = Campo("Tu nombre o apodo", Keyboard.Text);
     private readonly Entry _correo = Campo("Tu correo", Keyboard.Email);
@@ -80,13 +80,13 @@ public sealed class PerfilPage : ContentPage
     {
         base.OnAppearing();
         Apariencia.Aplicar(this);
-        Pantalla.Privada(true);
+        Pantalla.Actualizar();
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        Pantalla.Privada(Seguridad.PantallaDebeSerPrivada);
+        Pantalla.Actualizar();
     }
 
     private static Entry Campo(string placeholder, Keyboard teclado) => new()
