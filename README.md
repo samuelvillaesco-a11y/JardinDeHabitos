@@ -55,21 +55,37 @@ El código es abierto precisamente para que cualquiera pueda comprobarlo.
 
 ## Instalar
 
-1. Descarga el APK más reciente desde [Releases](../../releases/latest).
-2. Ábrelo en tu teléfono y permite "instalar apps de esta fuente" si Android lo pide.
-3. (Opcional) Verifica que el APK es auténtico: la huella SHA-256 del certificado de firma es
-
-   ```
-   CB:4E:1E:6A:3A:F7:AC:E2:05:92:14:DD:AA:05:AE:D6:E7:73:2D:23:32:23:55:F2:4E:89:7B:46:E4:82:B3:EF
-   ```
-
-   Con las herramientas de Android: `apksigner verify --print-certs jardin-de-habitos.apk`.
-
 **Requisitos:** Android 10 o superior, procesador ARM de 64 bits (prácticamente todos los teléfonos actuales).
 
-### F-Droid
+### Con Obtainium (recomendado: te avisa de cada versión nueva)
 
-El repositorio oficial de F-Droid exige compilar todo desde código fuente, y las herramientas de .NET MAUI para Android hoy se distribuyen precompiladas, así que por ahora no es posible publicarla ahí. El camino previsto es **[IzzyOnDroid](https://izzyondroid.org/)** (repositorio compatible con la app F-Droid), que toma el APK de los Releases de este repositorio. Los textos y capturas para las tiendas están en [`fastlane/`](fastlane/).
+[Obtainium](https://github.com/ImranR98/Obtainium) instala apps directo desde los Releases de su repositorio y las mantiene al día. No pide cuentas.
+
+1. Instala Obtainium desde [sus Releases](https://github.com/ImranR98/Obtainium/releases) o desde F-Droid.
+2. En el teléfono, toca este botón (o en Obtainium: *Add app* y pega `https://github.com/samuelvillaesco-a11y/JardinDeHabitos`):
+
+   <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22org.jardindehabitos.app%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fsamuelvillaesco-a11y%2FJardinDeHabitos%22%2C%22author%22%3A%22Jard%C3%ADn%20de%20H%C3%A1bitos%22%2C%22name%22%3A%22Jard%C3%ADn%20de%20H%C3%A1bitos%22%7D"><img src="docs/insignias/obtainium.png" alt="Consíguelo en Obtainium" height="48"></a>
+
+3. Toca *Install*. Cuando salga una versión nueva, Obtainium te avisa.
+
+### A mano
+
+1. Descarga el APK más reciente desde [Releases](../../releases/latest).
+2. Ábrelo en tu teléfono y permite "instalar apps de esta fuente" si Android lo pide.
+
+### Verificar que es auténtica
+
+La huella SHA-256 del certificado de firma es:
+
+```
+CB:4E:1E:6A:3A:F7:AC:E2:05:92:14:DD:AA:05:AE:D6:E7:73:2D:23:32:23:55:F2:4E:89:7B:46:E4:82:B3:EF
+```
+
+Obtainium la muestra como *Certificate Hash* en la ficha de la app. Con las herramientas de Android: `apksigner verify --print-certs jardin-de-habitos.apk`.
+
+### ¿Y F-Droid?
+
+El repositorio oficial de F-Droid exige compilar todo desde código fuente, y las herramientas de .NET MAUI para Android se distribuyen precompiladas, así que por ahora no se puede publicar ahí. Tampoco en IzzyOnDroid: su política no acepta apps cuyo código se escribió total o parcialmente con IA generativa, y este proyecto se desarrolló con ayuda de un asistente de IA (Claude). Los textos y capturas para tiendas están en [`fastlane/`](fastlane/).
 
 ## Compilar desde el código
 
