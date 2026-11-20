@@ -33,6 +33,8 @@ public static class CatalogoLogros
         yield return new("gen.legendaria", G, null, "Fruta Legendaria", "Un árbol llegó a {n} días de crecimiento.", Stat.RachaMax, [365, 730, 1095],
             "Un año es el umbral de la remisión sostenida.");
         yield return new("gen.bitacora", G, null, "Diario de campo", "Hiciste check-in en {n} días distintos.", Stat.DiasConCheckIn, [7, 30, 100]);
+        yield return new("gen.blog", G, null, "Cuaderno de raíces", "Escribiste en tu blog botánico {n} días distintos.", Stat.DiasEnBlog, [7, 30, 66],
+            "Anotar emociones, ganas y detonantes es parte central de la terapia cognitivo-conductual y de la prevención de recaídas.");
         yield return new("gen.constancia", G, null, "Sol de cada mañana", "{n} días seguidos visitando tu jardín.", Stat.SeguidosConCheckIn, [7, 30, 90]);
         yield return new("gen.riego", G, null, "Regadera fiel", "Regaste tu jardín en {n} días distintos.", Stat.DiasRegados, [7, 30, 90]);
         yield return new("gen.poda", G, null, "Tijeras con cariño", "Podaste en {n} días distintos.", Stat.DiasPodados, [7, 30, 90]);

@@ -78,4 +78,7 @@ public static class Tema
     public static string Fecha(DateOnly fecha) => fecha.ToString("dddd d 'de' MMMM", Cultura);
 
     public static string FechaCorta(DateOnly fecha) => fecha.ToString("d 'de' MMMM", Cultura);
+
+    /// <summary>Fecha compacta para ejes de gráficas: "3 mar".</summary>
+    public static string FechaEje(DateOnly fecha) => fecha.ToString("d MMM", Cultura).TrimEnd('.');
 }

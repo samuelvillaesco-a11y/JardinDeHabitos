@@ -12,8 +12,8 @@
 
 		<ApplicationTitle>Jardín de Hábitos</ApplicationTitle>
 		<ApplicationId>org.jardindehabitos.app</ApplicationId>
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationDisplayVersion>1.1</ApplicationDisplayVersion>
+		<ApplicationVersion>2</ApplicationVersion>
 
 		<SupportedOSPlatformVersion>29.0</SupportedOSPlatformVersion>
 		<!-- El teléfono solo necesita arm64; x64 es para el emulador (Debug). Dos ABI en un APK = ~12 MB de más. -->

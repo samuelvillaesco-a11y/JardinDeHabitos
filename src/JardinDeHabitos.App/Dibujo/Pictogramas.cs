@@ -46,6 +46,7 @@ public static class Pictogramas
             "gen.brote" => Pic.Brote,
             "gen.legendaria" => Pic.FrutaBrillante,
             "gen.bitacora" => Pic.Libreta,
+            "gen.blog" => Pic.Hoja,
             "gen.constancia" => Pic.Sol,
             "gen.riego" => Pic.Regadera,
             "gen.poda" => Pic.Tijeras,

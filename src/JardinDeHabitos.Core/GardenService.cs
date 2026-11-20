@@ -444,6 +444,41 @@ public sealed class GardenService(IGardenStore store, GrowthStageCalculator calc
 
     public void EliminarJardinero(Guid id) => store.EliminarJardinero(id);
 
+    // ---------- Blog botánico ----------
+
+    /// <summary>Entradas del blog, de la más nueva a la más vieja.</summary>
+    public IReadOnlyList<EntradaDiario> Diario() => [.. store.Diario().OrderByDescending(e => e.Dia)];
+
+    public EntradaDiario? Entrada(DateOnly dia) => store.Diario().FirstOrDefault(e => e.Dia == dia);
+
+    /// <summary>Qué hábitos hay plantados (decide qué síntomas se preguntan y qué notas se muestran).</summary>
+    public IReadOnlySet<MalHabito> Plantados() => store.Cargar().Select(r => r.Habito.Categoria).ToHashSet();
+
+    public ResumenDiario ResumenDiario(int dias) => Core.ResumenDiario.Calcular(store.Diario(), Hoy, dias);
+
+    /// <summary>Guarda (o reemplaza) la entrada de ese día y dice si lo registrado pide ayuda.</summary>
+    public Alerta GuardarEntrada(EntradaDiario entrada)
+    {
+        if (entrada.Dia > Hoy) throw new ArgumentException("No se puede escribir un día que todavía no llega.");
+        var limpia = entrada with
+        {
+            Nota = Vacio(entrada.Nota),
+            Sintomas = entrada.SintomasO.Where(kv => kv.Value > 0).ToDictionary(),
+        };
+        if (limpia.Problema() is { } p) throw new ArgumentException(p);
+        Sincronizar();
+        store.EnTransaccion(() =>
+        {
+            store.GuardarEntrada(limpia);
+            // Borrar una entrada no quita un logro ya ganado: se guarda el máximo.
+            Cambiar(s => s.Max(Stat.DiasEnBlog, store.Diario().Count));
+            EvaluarLogros();
+        });
+        return CatalogoDiario.Evaluar(limpia);
+    }
+
+    public void EliminarEntrada(DateOnly dia) => store.EliminarEntrada(dia);
+
     private static string? Vacio(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     // ---------- Internos ----------
