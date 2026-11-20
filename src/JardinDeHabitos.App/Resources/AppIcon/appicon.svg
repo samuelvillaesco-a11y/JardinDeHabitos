@@ -1,4 +1,14 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="456" height="456" viewBox="0 0 456 456" version="1.1" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" y="0" width="456" height="456" fill="#512BD4" />
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fondo del ícono: cielo de atardecer, de verde a amarillo, con el sol bajando. Dibujo propio (PolyForm Noncommercial). -->
+<svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.2" stop-color="#2F5226" />
+      <stop offset="0.5" stop-color="#7FA84A" />
+      <stop offset="0.82" stop-color="#F2C14E" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="456" height="456" fill="url(#cielo)" />
+  <circle cx="228" cy="300" r="78" fill="#FBE3A0" opacity="0.5" />
+  <circle cx="228" cy="300" r="52" fill="#FDEFC4" opacity="0.6" />
 </svg>

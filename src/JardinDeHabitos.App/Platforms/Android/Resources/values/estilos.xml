@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pantalla de inicio: la de MAUI (logo de la app sobre verde musgo). -->
+    <style name="Jardin.SplashTheme" parent="Maui.SplashTheme" />
+</resources>
