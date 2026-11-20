@@ -104,3 +104,12 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Seguros: logros (ON), blog botánico (ON), general (OFF), doble verificación (OFF). Cada cambio y la entrada al panel piden verificación.
 - Release solo pide POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED y USE_BIOMETRIC (Debug agrega INTERNET por el depurador). Copias de seguridad desactivadas.
 - Pantallas con FLAG_SECURE salen negras en capturas: para probar en el emulador leer la UI con `uiautomator dump`. Instalación limpia en el emulador: `-p:EmbedAssembliesIntoApk=true`.
+
+## Parte 1 + candados + cifrado (2026-11-19)
+- Pestañas abajo (TabbedPage, ToolbarPlacement.Bottom): Jardín · Blog botánico · Ajustes. El trofeo vive en la esquina del jardín.
+- Ajustes: música (on/off), Seguridad (siempre pide verificación), Privacidad, Acerca de. Blog: por ahora solo la puerta con llave (diario y emociones llegan en la parte 3).
+- Candado a elegir (primera vez y en Seguridad): bloqueo del teléfono (por defecto), PIN propio (4-8 dígitos) o patrón propio (3×3, mín. 4 puntos). Solo hash PBKDF2. Claves de texto viejas siguen valiendo (tipo Clave).
+- Base cifrada con SQLCipher (`sqlite-net-sqlcipher`); llave aleatoria en SecureStorage (`datos.llave`). Una base en claro se cifra al abrirla.
+- Música: "Forest Ambience" de TinyWorlds (CC0, OpenGameArt) en `Resources/Raw/bosque.mp3`, MediaPlayer en bucle al 35 %.
+- OJO patrón: un GraphicsView dentro de ScrollView pierde el arrastre en Android (aunque Orientation = Neither): las pantallas de patrón no usan ScrollView.
+- Licencia PolyForm Noncommercial en `LICENSE`. Repo privado hasta terminar README con capturas y pulir todo.

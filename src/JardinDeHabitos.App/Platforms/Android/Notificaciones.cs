@@ -71,7 +71,7 @@ public static class Notificaciones
         if (!File.Exists(ruta)) return;
 
         var mensajes = new List<(string Titulo, string Texto)>();
-        using (var store = new SqliteGardenStore(ruta))
+        using (var store = new SqliteGardenStore(ruta, llave: Servicios.LlaveDeDatos()))
         {
             var jardin = new GardenService(store, new GrowthStageCalculator());
             var arboles = jardin.Jardin();

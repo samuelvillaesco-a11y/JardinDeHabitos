@@ -12,18 +12,51 @@ public class App : Application
         UserAppTheme = AppTheme.Dark;
     }
 
-    private static NavigationPage Jardin() =>
-        new(new JardinPage())
+    /// <summary>La app: tres pestañas abajo (Jardín, Blog botánico, Ajustes). Los logros se abren desde el jardín.</summary>
+    private static Page Jardin()
+    {
+        var pestanas = new TabbedPage
         {
+            BarBackgroundColor = Tema.MusgoClaro,
+            BarTextColor = Tema.Hueso,
+            SelectedTabColor = Tema.Miel,
+            UnselectedTabColor = Tema.HuesoTenue,
+            Children =
+            {
+                Pestana(new JardinPage(), "Jardín", "🌳"),
+                Pestana(new BlogPage(), "Blog botánico", "📖"),
+                Pestana(new AjustesPage(), "Ajustes", "⚙️"),
+            },
+        };
+        Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.TabbedPage.SetToolbarPlacement(
+            pestanas, Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.ToolbarPlacement.Bottom);
+        return pestanas;
+    }
+
+    private static NavigationPage Pestana(Page raiz, string titulo, string icono) =>
+        new(raiz)
+        {
+            Title = titulo,
+            IconImageSource = new FontImageSource { Glyph = icono, Size = 22, Color = Tema.Hueso },
             BarBackgroundColor = Tema.Musgo,
             BarTextColor = Tema.Hueso,
         };
+
+    protected override void OnStart()
+    {
+        base.OnStart();
+        Musica.Sonar();
+    }
 
     protected override void OnSleep()
     {
         base.OnSleep();
         // La pantalla del PIN también manda la app al fondo: eso no cuenta como salir.
-        if (!Bloqueo.EnCurso) _salioAlFondo = DateTime.UtcNow;
+        if (!Bloqueo.EnCurso)
+        {
+            _salioAlFondo = DateTime.UtcNow;
+            Musica.Pausar();
+        }
     }
 
     /// <summary>
@@ -33,6 +66,7 @@ public class App : Application
     protected override void OnResume()
     {
         base.OnResume();
+        Musica.Sonar();
         bool salio = _salioAlFondo is not null;
         _salioAlFondo = null;
         if (Windows.FirstOrDefault() is not { } ventana) return;
@@ -52,6 +86,7 @@ public class App : Application
 
     private static void Refrescar(Page? pagina)
     {
+        if (pagina is TabbedPage t) pagina = t.CurrentPage;
         if (pagina is NavigationPage nav && nav.CurrentPage is IRefrescable r) r.AlVolver();
     }
 

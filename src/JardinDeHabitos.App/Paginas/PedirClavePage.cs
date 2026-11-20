@@ -9,50 +9,37 @@ namespace JardinDeHabitos.App.Paginas;
 public sealed class PedirClavePage : ContentPage
 {
     private readonly TaskCompletionSource<bool> _resultado = new();
-    private readonly Entry _entrada = new()
-    {
-        IsPassword = true,
-        IsSpellCheckEnabled = false,
-        IsTextPredictionEnabled = false,
-        FontFamily = Tema.Fuente,
-        FontSize = 20,
-        TextColor = Tema.Hueso,
-        PlaceholderColor = Tema.HuesoTenue,
-        BackgroundColor = Tema.MusgoClaro,
-        MaxLength = ClaveLocal.LargoMaximo,
-    };
+    private readonly TipoCandado _tipo;
+    private readonly ContentView _hueco = new();
     private readonly Label _indicacion = Tema.Texto("", 16);
     private readonly Label _error = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
-    private readonly Button _entrar = Tema.Boton("Entrar", Tema.Miel);
-    private readonly Button _olvide = Tema.Boton("Olvidé mi clave", Colors.Transparent, Tema.HuesoTenue);
+    private readonly Button _olvide = Tema.Boton("", Colors.Transparent, Tema.HuesoTenue);
+    private EntradaSecreto _entrada = null!;
+    private readonly VerticalStackLayout _pila;
     private bool _modoRecuperacion;
     private bool _probando;
 
-    private PedirClavePage(string titulo)
+    private PedirClavePage(string titulo, TipoCandado tipo)
     {
+        _tipo = tipo;
         BackgroundColor = Tema.Musgo;
-        _entrar.Clicked += async (_, _) => await Probar();
-        _entrada.Completed += async (_, _) => await Probar();
         _olvide.Clicked += (_, _) => CambiarModo(!_modoRecuperacion);
         var cancelar = Tema.Boton("Cancelar", Colors.Transparent, Tema.HuesoTenue);
         cancelar.Clicked += async (_, _) => await Cerrar(false);
 
-        Content = new ScrollView
+        _pila = new VerticalStackLayout
         {
-            Content = new VerticalStackLayout
-            {
-                Padding = new Thickness(24, 64, 24, 24),
-                Spacing = 14,
-                Children = { Tema.Texto("🔒", 48, Tema.FuenteTitulo), Tema.Titulo(titulo, 26), _indicacion, _entrada, _error, _entrar, _olvide, cancelar },
-            },
+            Padding = new Thickness(24, 48, 24, 24),
+            Spacing = 14,
+            Children = { Tema.Texto("🔒", 44, Tema.FuenteTitulo), Tema.Titulo(titulo, 26), _indicacion, _hueco, _error, _olvide, cancelar },
         };
         CambiarModo(false);
     }
 
-    /// <summary>Muestra la pantalla y espera: true si la clave (o la recuperación) fue correcta.</summary>
-    public static async Task<bool> MostrarAsync(INavigation nav, string titulo)
+    /// <summary>Muestra la pantalla y espera: true si el PIN, patrón o clave (o la recuperación) fue correcto.</summary>
+    public static async Task<bool> MostrarAsync(INavigation nav, string titulo, TipoCandado tipo)
     {
-        var p = new PedirClavePage(titulo);
+        var p = new PedirClavePage(titulo, tipo);
         await nav.PushModalAsync(p);
         return await p._resultado.Task;
     }
@@ -61,7 +48,7 @@ public sealed class PedirClavePage : ContentPage
     {
         base.OnAppearing();
         Pantalla.Privada(true);
-        _entrada.Focus();
+        _entrada.Enfocar();
     }
 
     protected override void OnDisappearing()
@@ -79,33 +66,46 @@ public sealed class PedirClavePage : ContentPage
     private void CambiarModo(bool recuperacion)
     {
         _modoRecuperacion = recuperacion;
-        _entrada.Text = "";
         _error.Text = "";
-        _entrada.IsPassword = !recuperacion;
-        _entrada.Keyboard = recuperacion ? Keyboard.Plain : Keyboard.Default;
-        _entrada.Placeholder = recuperacion ? "XXXX-XXXX-XXXX-XXXX" : "Tu clave";
+        _entrada = recuperacion ? new EntradaSecreto(TipoCandado.Clave, textoVisible: true) : new EntradaSecreto(_tipo);
+        _entrada.Listo += async s => await Probar(s);
+        _hueco.Content = _entrada;
+        // Con patrón no hay ScrollView: en Android se roba el arrastre del dedo aunque no se desplace.
+        bool patron = !recuperacion && _tipo == TipoCandado.Patron;
+        if (patron && Content != _pila)
+        {
+            if (Content is ScrollView s) s.Content = null;
+            Content = _pila;
+        }
+        else if (!patron && Content is not ScrollView) { Content = null; Content = new ScrollView { Content = _pila }; }
+        string que = _tipo switch { TipoCandado.Pin => "PIN", TipoCandado.Patron => "patrón", _ => "clave" };
         _indicacion.Text = recuperacion
-            ? "Escribe el código de recuperación que anotaste al crear tu clave."
-            : "Escribe la clave de la app.";
-        _olvide.Text = recuperacion ? "Volver a la clave" : "Olvidé mi clave";
+            ? "Escribe el código de recuperación que anotaste."
+            : _tipo switch
+            {
+                TipoCandado.Pin => "Escribe tu PIN.",
+                TipoCandado.Patron => "Dibuja tu patrón.",
+                _ => "Escribe tu clave.",
+            };
+        _olvide.Text = recuperacion ? $"Volver a mi {que}" : $"Olvidé mi {que}";
+        _entrada.Enfocar();
     }
 
-    private async Task Probar()
+    private async Task Probar(string texto)
     {
         if (_probando) return;
         _probando = true;
-        _entrar.IsEnabled = false;
         _error.Text = "Revisando…";
         try
         {
             var r = _modoRecuperacion
-                ? await Seguridad.ProbarRecuperacionAsync(_entrada.Text)
-                : await Seguridad.ProbarClaveAsync(_entrada.Text);
-            _entrada.Text = "";
+                ? await Seguridad.ProbarRecuperacionAsync(texto)
+                : await Seguridad.ProbarClaveAsync(texto);
+            _entrada.Limpiar();
             switch (r)
             {
                 case ResultadoClave.Correcta when _modoRecuperacion:
-                    // El código se gasta: hay que crear clave nueva (y sale un código nuevo).
+                    // El código se gasta: hay que elegir candado nuevo (y sale un código nuevo).
                     await Navigation.PushModalAsync(new CrearClavePage(CrearClavePage.Motivo.Recuperacion, async () =>
                     {
                         await Navigation.PopModalAsync();
@@ -120,15 +120,16 @@ public sealed class PedirClavePage : ContentPage
                     _error.Text = $"Demasiados intentos. Espera {Math.Ceiling(espera.TotalMinutes)} min y vuelve a intentar.";
                     break;
                 default:
-                    _error.Text = _modoRecuperacion ? "Ese código no es correcto." : "Esa clave no es correcta.";
+                    _error.Text = _modoRecuperacion ? "Ese código no es correcto." : _tipo switch
+                    {
+                        TipoCandado.Pin => "Ese PIN no es correcto.",
+                        TipoCandado.Patron => "Ese patrón no es correcto.",
+                        _ => "Esa clave no es correcta.",
+                    };
                     break;
             }
         }
-        finally
-        {
-            _probando = false;
-            _entrar.IsEnabled = true;
-        }
+        finally { _probando = false; }
     }
 
     private async Task Cerrar(bool ok)

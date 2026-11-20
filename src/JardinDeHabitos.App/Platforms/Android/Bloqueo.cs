@@ -21,6 +21,10 @@ public static class Bloqueo
     /// </summary>
     public static bool EnCurso { get; private set; }
 
+    /// <summary>¿El teléfono tiene huella, PIN o patrón configurado?</summary>
+    public static bool TelefonoTieneBloqueo =>
+        Platform.CurrentActivity?.GetSystemService(Context.KeyguardService) is KeyguardManager kg && kg.IsDeviceSecure;
+
     public static Task<Resultado> PedirAsync() => PedirAsync("Tu estante de trofeos", "Desbloquea para verlo");
 
     public static async Task<Resultado> PedirAsync(string titulo, string subtitulo)
