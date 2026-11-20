@@ -67,7 +67,7 @@ public static class Telefono
                 return;
             }
         }
-        catch (Java.Lang.Exception) { }
+        catch (Exception ex) { Android.Util.Log.Warn("JardinDeHabitos", $"No se pudo leer el contacto elegido: {ex.Message}"); }
         tcs.TrySetResult(null);
     }
 

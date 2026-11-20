@@ -79,6 +79,7 @@ public sealed class PerfilPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        Apariencia.Aplicar(this);
         Pantalla.Privada(true);
     }
 
