@@ -68,6 +68,18 @@ El código es abierto precisamente para que cualquiera pueda comprobarlo.
 
 3. Toca *Install*. Cuando salga una versión nueva, Obtainium te avisa.
 
+### Con F-Droid (o Droid-ify, Neo Store)
+
+Jardín de Hábitos tiene su propio repositorio F-Droid. Agrégalo una vez y F-Droid te avisará de cada versión:
+
+1. En el teléfono, abre **[este enlace](https://samuelvillaesco-a11y.github.io/jardin-fdroid/repo?fingerprint=E3DDD5419D3C0CA7F79BC898A5368E2B015B164493F84846A09DE86A890FE92F)** (F-Droid te pregunta si quieres agregar el repositorio), o en F-Droid ve a *Ajustes › Repositorios › +* y pega:
+
+   ```
+   https://samuelvillaesco-a11y.github.io/jardin-fdroid/repo?fingerprint=E3DDD5419D3C0CA7F79BC898A5368E2B015B164493F84846A09DE86A890FE92F
+   ```
+
+2. Busca "Jardín de Hábitos" e instálala.
+
 ### A mano
 
 1. Descarga el APK más reciente desde [Releases](../../releases/latest).
@@ -83,9 +95,9 @@ CB:4E:1E:6A:3A:F7:AC:E2:05:92:14:DD:AA:05:AE:D6:E7:73:2D:23:32:23:55:F2:4E:89:7B
 
 Obtainium la muestra como *Certificate Hash* en la ficha de la app. Con las herramientas de Android: `apksigner verify --print-certs jardin-de-habitos.apk`.
 
-### ¿Y F-Droid?
+### ¿Por qué no está en el F-Droid oficial?
 
-El repositorio oficial de F-Droid exige compilar todo desde código fuente, y las herramientas de .NET MAUI para Android se distribuyen precompiladas, así que por ahora no se puede publicar ahí. Tampoco en IzzyOnDroid: su política no acepta apps cuyo código se escribió total o parcialmente con IA generativa, y este proyecto se desarrolló con ayuda de un asistente de IA (Claude). Los textos y capturas para tiendas están en [`fastlane/`](fastlane/).
+El repositorio oficial de F-Droid exige compilar todo desde código fuente, y las herramientas de .NET MAUI para Android se distribuyen precompiladas. IzzyOnDroid tampoco es opción: su política no acepta apps cuyo código se escribió total o parcialmente con IA generativa, y este proyecto se desarrolló con ayuda de un asistente de IA (Claude). Por eso el proyecto publica su propio repositorio ([jardin-fdroid](https://github.com/samuelvillaesco-a11y/jardin-fdroid)), generado con las herramientas oficiales de F-Droid a partir de los mismos APK firmados de Releases. Los textos y capturas de la ficha están en [`fastlane/`](fastlane/).
 
 ## Compilar desde el código
 
