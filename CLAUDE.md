@@ -140,7 +140,7 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 ## Versión 1.0 pública (2026-11-20)
 - Firma de publicación: llave propia RSA 4096 en `~/.local/share/jardin-de-habitos-firma/` (jardin.keystore + clave.txt), FUERA del repo. Huella SHA-256: CB:4E:1E:6A:3A:F7:AC:E2:05:92:14:DD:AA:05:AE:D6:E7:73:2D:23:32:23:55:F2:4E:89:7B:46:E4:82:B3:EF. Sin esa llave no se pueden publicar actualizaciones que instalen encima.
   `dotnet publish src/JardinDeHabitos.App -f net10.0-android -c Release -p:AndroidKeyStore=true -p:AndroidSigningKeyStore=<ruta>/jardin.keystore -p:AndroidSigningKeyAlias=jardin -p:AndroidSigningStorePass=file:<ruta>/clave.txt -p:AndroidSigningKeyPass=file:<ruta>/clave.txt`
-- APK en GitHub Releases (no dentro del código). F-Droid oficial no acepta hoy apps .NET MAUI (la carga de trabajo Android viene precompilada); ruta prevista: IzzyOnDroid, que toma el APK de Releases. Metadatos en `fastlane/metadata/android/es-MX/`.
+- APK en GitHub Releases (no dentro del código). F-Droid oficial no acepta hoy apps .NET MAUI (la carga de trabajo Android viene precompilada); IzzyOnDroid tampoco: rechaza código hecho total o parcialmente con IA generativa (este lo escribió Claude). Distribución: Obtainium (botón en el README, deep link probado en emulador con Obtainium 1.7.4) y repo F-Droid propio. Metadatos en `fastlane/metadata/android/es-MX/`.
 - Verificación final en emulador (Release recortada): arreglados el robo de arrastres por el deslizamiento entre pestañas (`SetIsSwipePagingEnabled(false)`) y FLAG_SECURE pegado tras la bienvenida (`Pantalla.Actualizar` encola con Dispatcher).
 - Al subir versión: incrementar `ApplicationVersion` y `ApplicationDisplayVersion`, agregar `fastlane/.../changelogs/<versionCode>.txt`.
 
