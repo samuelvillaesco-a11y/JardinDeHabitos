@@ -92,8 +92,6 @@ public class CheckInProcessor(GrowthStageCalculator calculadora)
     public static DateOnly? FinCuidado(StrikeState e, DateOnly hoy) =>
         !EnCuidado(e, hoy) ? null : Max(e.FinPlaga, e.FinRaices ?? DateOnly.MinValue);
 
-    public static PenaltyLevel Nivel(StrikeState e, DateOnly hoy) =>
-        TieneRaices(e, hoy) ? PenaltyLevel.Strike2 : TienePlaga(e, hoy) ? PenaltyLevel.Strike1 : PenaltyLevel.Ninguna;
 
     /// <summary>Borrón y cuenta nueva: opcional, tras 90 días sin ningún strike.</summary>
     public bool PuedeBorron(StrikeState e) =>

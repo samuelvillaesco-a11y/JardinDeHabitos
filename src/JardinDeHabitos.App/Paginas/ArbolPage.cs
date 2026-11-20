@@ -171,13 +171,13 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         if (v.DiasSinVisita > 0)
             partes.Add(v.DiasSinVisita == 1
                 ? "Ayer no lo visitaste: hoy no creció."
-                : $"Lleva {v.DiasSinVisita} días sin visita y está en pausa. A los 14 le cae una plaga.");
+                : $"Lleva {v.DiasSinVisita} días sin visita y está en pausa. A los {AvanceDiario.PrimerStrikeAbandono} le cae una plaga.");
         if (v.EnCuidado)
             partes.Add("Mientras está enfermo no crece.");
         if (v.Strikes > 0)
             partes.Add(v.Strikes == 1
                 ? "Tiene 1 tropiezo: al segundo le salen raíces podridas."
-                : "Tiene 2 tropiezos: un tercero y el árbol vuelve a ser semilla.");
+                : $"Tiene {v.Strikes} tropiezos: al {CheckInProcessor.StrikesParaMorir}.º el árbol vuelve a ser semilla.");
         if (v.StrikesAbandono > 0)
             partes.Add(v.StrikesAbandono == 1 ? "Y 1 marca por abandono." : $"Y {v.StrikesAbandono} marcas por abandono.");
         return string.Join(" ", partes);
@@ -290,7 +290,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             borrar.Clicked += async (_, _) =>
             {
                 bool si = await DisplayAlertAsync("Tres meses sin tropiezos",
-                    "Llevas 90 días sin strikes en este árbol. Puedes borrarlos o dejarlos como recuerdo. Es tu decisión.",
+                    $"Llevas {CheckInProcessor.DiasParaBorron} días sin strikes en este árbol. Puedes borrarlos o dejarlos como recuerdo. Es tu decisión.",
                     "Borrarlos", "Dejarlos");
                 if (!si) return;
                 await Intentar(() => Servicios.Jardin.Borron(_id));
@@ -339,10 +339,10 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             if (!seguro) return;
         }
 
-        ResultadoCheckIn r;
+        CheckInOutcome o;
         try
         {
-            r = Servicios.Jardin.CheckIn(_id, resultado);
+            o = Servicios.Jardin.CheckIn(_id, resultado);
         }
         catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
         {
@@ -351,7 +351,6 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             return;
         }
 
-        var o = r.Outcome;
         if (o.ArbolMurio)
         {
             await DisplayAlertAsync("El árbol volvió a ser semilla",
@@ -363,10 +362,10 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             var v = Servicios.Jardin.Arbol(_id);
             string msg = v.Raices
                 ? "Le salieron raíces podridas. Hay que cuidarlo cada día hasta que sane; mientras tanto no crece."
-                : "Le cayó una plaga. Defiéndelo durante 3 días; mientras tanto no crece. Mañana es otro día.";
+                : $"Le cayó una plaga. Defiéndelo durante {CheckInProcessor.DiasPlaga} días; mientras tanto no crece. Mañana es otro día.";
             // En un tropiezo, la ayuda queda a un toque.
             if (await DisplayAlertAsync("Gracias por decirlo", msg + "\n\nSi lo necesitas, pide ayuda: tus jardineros, la Línea de la Vida o el 911.", "Pedir ayuda", "Cuidarlo"))
-                await Navigation.PushAsync(new AyudaPage());
+                await this.UnaVez(() => new AyudaPage());
         }
 
         await Avisos.AnunciarLogros(this);

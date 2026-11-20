@@ -82,7 +82,8 @@ public sealed class Chips<T> : FlexLayout where T : notnull
 
 public static class Dias
 {
-    public const string AvisoLleno = "Ya elegiste 2 días libres. Toca uno de ellos para quitarlo y luego elige otro.";
+    public static readonly string AvisoLleno =
+        $"Ya elegiste {Core.CheatDaySchedule.MaxDiasPorSemana} días libres. Toca uno de ellos para quitarlo y luego elige otro.";
 
     /// <summary>Texto que aparece cuando se intenta elegir un 3.er día libre y se oculta al cambiar.</summary>
     public static Label AvisoPara<T>(Chips<T> chips) where T : notnull

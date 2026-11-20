@@ -2,25 +2,27 @@ using JardinDeHabitos.Core;
 
 namespace JardinDeHabitos.App.Dibujo;
 
-/// <summary>Especies disponibles y el color de su fruta.</summary>
+/// <summary>El color de la fruta de cada especie. Las especies se definen una sola vez, en Core (<see cref="EspeciesDeArbol"/>).</summary>
 public static class Especies
 {
-    public static readonly IReadOnlyList<(string Nombre, Color Fruta)> Todas =
-    [
-        ("Manzano", Color.FromArgb("#C8553D")),
-        ("Naranjo", Color.FromArgb("#F08A24")),
-        ("Limonero", Color.FromArgb("#F2D13D")),
-        ("Cerezo", Color.FromArgb("#A3263A")),
-        ("Durazno", Color.FromArgb("#F2A65A")),
-        ("Higuera", Color.FromArgb("#7A4466")),
-        ("Aguacate", Color.FromArgb("#5C7A29")),
-        ("Mango", Color.FromArgb("#F5B335")),
-        ("Granado", Color.FromArgb("#B0283C")),
-        ("Olivo", Color.FromArgb("#4B3B47")),
-    ];
+    private static readonly Dictionary<string, Color> Frutas = new()
+    {
+        ["Manzano"] = Color.FromArgb("#C8553D"),
+        ["Naranjo"] = Color.FromArgb("#F08A24"),
+        ["Limonero"] = Color.FromArgb("#F2D13D"),
+        ["Cerezo"] = Color.FromArgb("#A3263A"),
+        ["Durazno"] = Color.FromArgb("#F2A65A"),
+        ["Higuera"] = Color.FromArgb("#7A4466"),
+        ["Aguacate"] = Color.FromArgb("#5C7A29"),
+        ["Mango"] = Color.FromArgb("#F5B335"),
+        ["Granado"] = Color.FromArgb("#B0283C"),
+        ["Olivo"] = Color.FromArgb("#4B3B47"),
+    };
 
-    public static Color ColorFruta(string especie) =>
-        Todas.FirstOrDefault(e => e.Nombre == especie).Fruta ?? Todas[0].Fruta;
+    static Especies() =>
+        System.Diagnostics.Debug.Assert(EspeciesDeArbol.Todas.All(Frutas.ContainsKey), "Falta el color de fruta de una especie nueva.");
+
+    public static Color ColorFruta(string especie) => Frutas.GetValueOrDefault(especie, Frutas["Manzano"]);
 }
 
 /// <summary>Lo que hay que pintar de un árbol.</summary>

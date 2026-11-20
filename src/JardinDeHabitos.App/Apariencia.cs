@@ -11,14 +11,12 @@ public static class Apariencia
 {
     private const string ClaveFondo = "apariencia.fondo";
 
-    public static event Action? Cambio;
 
     public static Fondo Actual => Fondo.Leer(Preferences.Default.Get<string?>(ClaveFondo, null));
 
     public static void Elegir(Fondo fondo)
     {
         Preferences.Default.Set(ClaveFondo, fondo.Serializar());
-        Cambio?.Invoke();
     }
 
     public static string ImagenDe(EscenaFondo e) => e switch
