@@ -29,6 +29,9 @@ public class App : Application
             },
         };
         pestanas.CurrentPageChanged += (_, _) => Pantalla.Actualizar();
+        // Sin deslizar entre pestañas: el deslizamiento horizontal se robaba los arrastres de los
+        // mini-juegos (regadera, raíces, poda). Las pestañas se cambian tocando la barra.
+        Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.TabbedPage.SetIsSwipePagingEnabled(pestanas, false);
         Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.TabbedPage.SetToolbarPlacement(
             pestanas, Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.ToolbarPlacement.Bottom);
         return pestanas;

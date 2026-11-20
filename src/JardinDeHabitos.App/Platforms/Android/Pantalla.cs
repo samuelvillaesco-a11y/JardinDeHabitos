@@ -21,8 +21,15 @@ public interface IConLlave
 /// </summary>
 public static class Pantalla
 {
-    /// <summary>Vuelve a calcular la protección cuando termine la navegación en curso.</summary>
-    public static void Actualizar() => MainThread.BeginInvokeOnMainThread(Aplicar);
+    /// <summary>
+    /// Vuelve a calcular la protección cuando termine la navegación en curso. Se encola con el
+    /// Dispatcher (MainThread.BeginInvokeOnMainThread correría al instante, antes de cambiar de página).
+    /// </summary>
+    public static void Actualizar()
+    {
+        if (Application.Current?.Dispatcher is { } d) d.Dispatch(Aplicar);
+        else Aplicar();
+    }
 
     private static void Aplicar()
     {
