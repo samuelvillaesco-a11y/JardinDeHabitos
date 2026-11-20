@@ -113,3 +113,4 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Música: "Forest Ambience" de TinyWorlds (CC0, OpenGameArt) en `Resources/Raw/bosque.mp3`, MediaPlayer en bucle al 35 %.
 - OJO patrón: un GraphicsView dentro de ScrollView pierde el arrastre en Android (aunque Orientation = Neither): las pantallas de patrón no usan ScrollView.
 - Licencia MIT en `LICENSE`. Repo privado hasta terminar README con capturas y pulir todo.
+- IMPORTANTE (2026-11-20): un APK Release de compilación incremental cerró la app en el teléfono al abrir ("Invalid compressed assembly descriptor index"). Antes de instalar en el teléfono: `rm -rf src/*/bin src/*/obj` y `dotnet publish -c Release` desde cero; luego abrirla y revisar `adb logcat -b crash`.
