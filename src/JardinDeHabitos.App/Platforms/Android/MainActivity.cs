@@ -23,4 +23,10 @@ public class MainActivity : MauiAppCompatActivity
         }
         Notificaciones.Programar(this);
     }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        Telefono.AlVolver(requestCode, resultCode, data);
+    }
 }
