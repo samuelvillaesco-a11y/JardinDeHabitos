@@ -18,6 +18,7 @@ public sealed class PedirClavePage : ContentPage, IPrivada
     private readonly VerticalStackLayout _pila;
     private bool _modoRecuperacion;
     private bool _probando;
+    private bool _cerrando;
 
     private PedirClavePage(string titulo, TipoCandado tipo)
     {
@@ -55,9 +56,10 @@ public sealed class PedirClavePage : ContentPage, IPrivada
     {
         base.OnDisappearing();
         // Si la cerraron por fuera (p. ej. al volver de segundo plano), quien espera recibe "no".
+        if (_cerrando) return;
         Dispatcher.Dispatch(() =>
         {
-            if (!Navigation.ModalStack.Contains(this)) _resultado.TrySetResult(false);
+            if (!_cerrando && !Navigation.ModalStack.Contains(this)) _resultado.TrySetResult(false);
         });
         Pantalla.Actualizar();
     }
@@ -143,7 +145,8 @@ public sealed class PedirClavePage : ContentPage, IPrivada
 
     private async Task Cerrar(bool ok)
     {
-        if (_resultado.Task.IsCompleted) return;
+        if (_resultado.Task.IsCompleted || _cerrando) return;
+        _cerrando = true;
         if (Navigation.ModalStack.LastOrDefault() == this) await Navigation.PopModalAsync();
         _resultado.TrySetResult(ok);
     }

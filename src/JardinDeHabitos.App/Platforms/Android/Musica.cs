@@ -9,7 +9,7 @@ namespace JardinDeHabitos.App;
 public static class Musica
 {
     private const string ClaveEncendida = "ajustes.musica";
-    private const string Archivo = "bosque.mp3";
+    private const string Archivo = "bosque.ogg";
     private const float Volumen = 0.35f;
     private static MediaPlayer? _reproductor;
 

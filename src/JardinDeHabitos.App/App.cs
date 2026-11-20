@@ -100,7 +100,8 @@ public class App : Application
         while (raiz.Navigation.ModalStack.Count > 0) await raiz.Navigation.PopModalAsync(false);
         foreach (var pila in (raiz as TabbedPage)?.Children.OfType<NavigationPage>() ?? [])
         {
-            if (pila.Navigation.NavigationStack.Skip(1).Any(p => p is IConLlave))
+            // La pila de la pestaña se lee desde su página raíz (la del NavigationPage es la del padre).
+            if (pila.RootPage.Navigation.NavigationStack.Skip(1).Any(p => p is IConLlave))
                 await pila.PopToRootAsync(false);
             if (pila.RootPage is IConLlave raizConLlave) raizConLlave.Cerrar();
         }
