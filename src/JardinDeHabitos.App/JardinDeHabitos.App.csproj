@@ -16,7 +16,18 @@
 		<ApplicationVersion>1</ApplicationVersion>
 
 		<SupportedOSPlatformVersion>29.0</SupportedOSPlatformVersion>
+		<!-- El teléfono solo necesita arm64; x64 es para el emulador (Debug). Dos ABI en un APK = ~12 MB de más. -->
+		<!-- Para probar una Release en el emulador: -p:Emulador=true -->
 		<RuntimeIdentifiers>android-x64;android-arm64</RuntimeIdentifiers>
+		<RuntimeIdentifiers Condition="'$(Configuration)' == 'Release' and '$(Emulador)' != 'true'">android-arm64</RuntimeIdentifiers>
+		<RuntimeIdentifiers Condition="'$(Configuration)' == 'Release' and '$(Emulador)' == 'true'">android-x64</RuntimeIdentifiers>
+	</PropertyGroup>
+
+	<!-- App ligera: R8 recorta el código Java/Kotlin que no se usa y el recorte de .NET es completo
+	     (la UI es C# puro, sin XAML ni reflexión propia). -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<AndroidLinkTool>r8</AndroidLinkTool>
+		<TrimMode>full</TrimMode>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -30,7 +41,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" Condition="'$(Configuration)' == 'Debug'" />
 	</ItemGroup>
 
 	<ItemGroup>
