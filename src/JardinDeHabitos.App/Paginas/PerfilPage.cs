@@ -143,6 +143,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
             {
                 if (!await DisplayAlertAsync("¿Quitar jardinero?", $"{j.Nombre} deja de aparecer en Pedir ayuda.", "Quitar", "Cancelar")) return;
                 Servicios.Jardin.EliminarJardinero(j.Id);
+                JardineroWidget.Sincronizar(Servicios.Jardin.Jardineros().FirstOrDefault());
                 PintarJardineros();
             };
             var fila = new Grid { ColumnDefinitions = [new(GridLength.Star), new(GridLength.Auto)], ColumnSpacing = 8 };
@@ -189,6 +190,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
         try
         {
             Servicios.Jardin.AgregarJardinero(nombre, numero);
+            JardineroWidget.Sincronizar(Servicios.Jardin.Jardineros().FirstOrDefault());
             PintarJardineros();
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
