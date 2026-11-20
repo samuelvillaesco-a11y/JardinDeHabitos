@@ -151,3 +151,10 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Gráficas en `Dibujo/Graficas.cs` (GraphicsView, toque = guía y lectura). Ánimo y ganas en gráficas separadas (nunca doble eje). Mapa por día hasta 30 días, por semana en 3 meses.
 - Logro "gen.blog" (Cuaderno de raíces) 7/30/66 días con `Stat.DiasEnBlog` (máximo, no baja al borrar).
 - Probar en emulador con días pasados: `adb root`, `settings put global auto_time 0`, `date MMDDhhmmYYYY.ss`; al terminar `auto_time 1`. Para capturas del blog (FLAG_SECURE) se compiló una versión temporal sin la bandera y se revirtió con `git checkout`: nunca commitearla.
+
+## Distribución: Obtainium y repo F-Droid propio (2026-11-20)
+- Obtainium: botón en el README (deep link `apps.obtainium.imranr.dev/redirect?r=obtainium://app/<json>`), insignia alojada en `docs/insignias/obtainium.png`. No necesita nada por versión: lee GitHub Releases.
+- Repo F-Droid: público en github.com/samuelvillaesco-a11y/jardin-fdroid (GitHub Pages), URL https://samuelvillaesco-a11y.github.io/jardin-fdroid/repo, huella del índice E3DDD5419D3C0CA7F79BC898A5368E2B015B164493F84846A09DE86A890FE92F. Llave del índice (CN=jardin, OU=F-Droid) y config.yml con contraseñas en `~/.local/share/jardin-de-habitos-fdroid/trabajo/` (FUERA del repo; respaldarla: sin ella los usuarios tendrían que volver a agregar el repo).
+- Cada versión nueva: crear el GitHub Release como siempre y luego `scripts/publicar-fdroid.sh <apk firmado>` (copia el APK, actualiza CurrentVersionCode y metadatos desde fastlane, regenera y firma el índice, sube sin `repo/status`, que trae rutas locales).
+- OJO: `fdroid init` usa el nombre del equipo como CN si no se pasa `--repo-keyalias`; el `repo_icon` se busca relativo a `trabajo/`, no a `repo/icons`.
+- Pendiente cosmético: el índice v2 no lleva las novedades por versión (repo solo de binarios); F-Droid muestra el enlace a Releases.
