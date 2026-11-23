@@ -124,6 +124,6 @@ Las reglas y los tiempos se basan en fuentes acreditadas; el detalle y los enlac
 
 ## Licencia y créditos
 
-Código bajo [licencia PolyForm Noncommercial](LICENSE). Música "Forest Ambience" de TinyWorlds (CC0) y demás recursos listados en [`ASSETS.md`](ASSETS.md).
+Código bajo [licencia PolyForm Noncommercial 1.0.0](LICENSE): puedes usarlo, estudiarlo, cambiarlo y compartirlo gratis para fines personales o no comerciales, siempre dando crédito. **Venderlo o usarlo con fines comerciales requiere permiso del autor.** Música "Forest Ambience" de TinyWorlds (CC0) y demás recursos listados en [`ASSETS.md`](ASSETS.md).
 
 ¿Quieres ayudar? Los reportes de errores y las propuestas son bienvenidos en *Issues*.

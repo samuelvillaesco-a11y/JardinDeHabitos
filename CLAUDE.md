@@ -112,7 +112,7 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Base cifrada con SQLCipher (`sqlite-net-sqlcipher`); llave aleatoria en SecureStorage (`datos.llave`). Una base en claro se cifra al abrirla.
 - Música: "Forest Ambience" de TinyWorlds (CC0, OpenGameArt) en `Resources/Raw/bosque.ogg`, MediaPlayer en bucle al 35 %.
 - OJO patrón: un GraphicsView dentro de ScrollView pierde el arrastre en Android (aunque Orientation = Neither): las pantallas de patrón no usan ScrollView.
-- Licencia PolyForm Noncommercial en `LICENSE`. Repo privado hasta terminar README con capturas y pulir todo.
+- Licencia PolyForm Noncommercial 1.0.0 en `LICENSE` (desde 2026-11-23 en todo el historial; antes MIT). Uso comercial solo con permiso del autor. Todo proyecto nuevo del usuario va igual.
 - IMPORTANTE (2026-11-20): un APK Release de compilación incremental cerró la app en el teléfono al abrir ("Invalid compressed assembly descriptor index"). Antes de instalar en el teléfono: `rm -rf src/*/bin src/*/obj` y `dotnet publish -c Release` desde cero; luego abrirla y revisar `adb logcat -b crash`.
 
 ## Personalización (2026-11-20)
