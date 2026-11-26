@@ -19,7 +19,7 @@ public sealed class AyudaPage : ContentPage
         pila.Add(Tema.Titulo("🆘 Pedir ayuda", 30));
         pila.Add(Tema.Texto("Pedir ayuda es parte de crecer. Nada de esto se registra en la app.", 15, color: Tema.HuesoTenue));
 
-        var emergencia = Tema.Boton("📞 Llamar al 911", Color.FromArgb("#C8553D"), Tema.Hueso);
+        var emergencia = Tema.Boton(Iconos.Telefono, "Llamar al 911", Color.FromArgb("#A8402B"), Colors.White);
         emergencia.FontSize = 20;
         emergencia.Clicked += async (_, _) => await Marcar(Telefono.Emergencias);
         pila.Add(Tema.Parcela(new VerticalStackLayout
@@ -55,7 +55,7 @@ public sealed class AyudaPage : ContentPage
             pila.Add(Tema.Parcela(new VerticalStackLayout
             {
                 Spacing = 8,
-                Children = { Tema.Texto($"🌿 {j.Nombre}", 17, Tema.FuenteNegrita), botones },
+                Children = { Tema.Texto(j.Nombre, 17, Tema.FuenteNegrita), botones },
             }));
         }
 

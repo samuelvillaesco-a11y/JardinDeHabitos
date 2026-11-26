@@ -32,7 +32,7 @@
 
 	<ItemGroup>
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" />
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#27331F" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#F4EEDF" BaseSize="128,128" />
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\escena_*.svg" BaseSize="360,640" />
 		<MauiFont Include="Resources\Fonts\*" />

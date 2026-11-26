@@ -41,7 +41,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
 
         var guardar = Tema.Boton("Guardar perfil", Tema.Miel);
         guardar.Clicked += (_, _) => Guardar();
-        var desdeContactos = Tema.Boton("➕ Elegir de mis contactos", Tema.Hoja);
+        var desdeContactos = Tema.Boton(Iconos.Mas, "Elegir de mis contactos", Tema.Hoja);
         desdeContactos.Clicked += async (_, _) => await AgregarDesdeContactos();
         var aMano = Tema.Boton("Escribir un número", Tema.MusgoClaro, Tema.Hueso);
         aMano.Clicked += async (_, _) => await AgregarAMano();
@@ -54,7 +54,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
                 Spacing = 12,
                 Children =
                 {
-                    Tema.Titulo("👤 Tu perfil", 30),
+                    Tema.Titulo("Tu perfil", 30),
                     Tema.Texto("Todo es opcional. Se guarda cifrado y solo en este teléfono; nadie más lo ve.", 14, color: Tema.HuesoTenue),
                     _nombre, _correo, _telefono,
                     Tema.Texto("Salud (opcional)", 17, Tema.FuenteNegrita, Tema.Hoja),
@@ -64,7 +64,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
                     Tema.Texto("Moderada = 150 a 300 minutos a la semana de caminar rápido, bici o similar (recomendación de la OMS).", 13, color: Tema.HuesoTenue),
                     _aviso,
                     guardar,
-                    Tema.Texto("🌿 Tus jardineros", 22, Tema.FuenteTitulo, Tema.Hoja),
+                    Tema.Texto("Tus jardineros", 22, Tema.FuenteTitulo, Tema.Hoja),
                     Tema.Texto($"Personas de confianza a quien llamar o escribir en un momento difícil (hasta {Jardinero.Maximo}). Aparecen en Ajustes › Pedir ayuda.", 14, color: Tema.HuesoTenue),
                     _listaJardineros,
                     desdeContactos,

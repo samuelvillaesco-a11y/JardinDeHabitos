@@ -126,15 +126,15 @@ public sealed class Escena : IDrawable
                 break;
             case MiniJuego.Podar:
                 canvas.StrokeLineCap = LineCap.Round;
-                canvas.StrokeColor = Tema.Corteza;
+                canvas.StrokeColor = Naturaleza.Corteza;
                 canvas.StrokeSize = g.Escala * 0.014f;
                 foreach (var (a, b) in _ramas)
                 {
                     canvas.DrawLine(a, b);
-                    canvas.Relleno(Tema.HojaOscura);
+                    canvas.Relleno(Naturaleza.HojaOscura);
                     canvas.FillCircle(b, g.Escala * 0.018f);
                 }
-                canvas.StrokeColor = Tema.Hueso.WithAlpha(0.6f);
+                canvas.StrokeColor = Naturaleza.Hueso.WithAlpha(0.6f);
                 canvas.StrokeSize = 3;
                 foreach (var (a, b) in _cortes.TakeLast(12)) canvas.DrawLine(a, b);
                 break;

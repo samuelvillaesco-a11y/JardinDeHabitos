@@ -84,7 +84,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
     private void PintarCerrado()
     {
         _pila.Clear();
-        _pila.Add(Tema.Titulo("📖 Blog botánico", 34));
+        _pila.Add(Tema.Titulo("Blog botánico", 34));
         var abrir = Tema.Boton("Abrir mi blog", Tema.Miel);
         abrir.Clicked += async (_, _) => await Abrir();
         _pila.Add(Tema.Texto("Tu diario está bajo llave.", 16, color: Tema.HuesoTenue));
@@ -101,7 +101,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
         var r = svc.ResumenDiario(Rango);
 
         _pila.Clear();
-        _pila.Add(Tema.Titulo("📖 Blog botánico", 34));
+        _pila.Add(Tema.Titulo("Blog botánico", 34));
         _pila.Add(Tema.Texto("Tu diario y cómo te has sentido. Solo tú lo ves.", 16, color: Tema.HuesoTenue));
         _pila.Add(TarjetaHoy(entradas.FirstOrDefault(e => e.Dia == hoy), hoy));
 
@@ -145,7 +145,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
         if (hoyEntrada is null)
         {
             caja.Add(Tema.Texto("¿Cómo te sentiste hoy? Toma un minuto: anotar el día te ayuda a ver tus patrones.", 15));
-            var escribir = Tema.Boton("✍️ Escribir la entrada de hoy", Tema.Miel);
+            var escribir = Tema.Boton(Iconos.Pluma, "Escribir la entrada de hoy", Tema.Miel);
             escribir.Clicked += async (_, _) => await Escribir(hoy);
             caja.Add(escribir);
         }
@@ -219,7 +219,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
         caja.Add(Tema.Texto("Síntomas", 18, Tema.FuenteTitulo, Tema.Hoja));
         if (r.Mapa.Count == 0)
         {
-            caja.Add(Tema.Texto("No anotaste síntomas en este periodo. 🌿", 15));
+            caja.Add(Tema.Texto("No anotaste síntomas en este periodo.", 15));
             return Tema.Parcela(caja);
         }
         caja.Add(Tema.Texto(r.PorSemana ? "Promedio por semana. Más brillante = más fuerte." : "Un cuadro por día. Más brillante = más fuerte; un punto = no anotaste ese día.",
@@ -345,7 +345,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
     private static View Ciencia(IReadOnlySet<MalHabito> plantados)
     {
         var caja = new VerticalStackLayout { Spacing = 8 };
-        caja.Add(Tema.Texto("🔬 Lo que dice la ciencia", 18, Tema.FuenteTitulo, Tema.Hoja));
+        caja.Add(Tema.Texto("Lo que dice la ciencia", 18, Tema.FuenteTitulo, Tema.Hoja));
         caja.Add(Tema.Texto(CatalogoDiario.FundamentoRegistro, 14));
         foreach (var h in plantados.OrderBy(h => h))
             if (CatalogoDiario.Fundamento(h) is { } f)

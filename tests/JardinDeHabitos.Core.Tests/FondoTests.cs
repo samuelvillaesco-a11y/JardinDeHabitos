@@ -6,10 +6,10 @@ namespace JardinDeHabitos.Core.Tests;
 public class FondoTests
 {
     [Fact]
-    public void PorDefecto_EsVerdeMusgo_YNoNecesitaVelo()
+    public void PorDefecto_EsPapel_YNoNecesitaVelo()
     {
         Assert.Equal(TipoFondo.Solido, Fondo.PorDefecto.Tipo);
-        Assert.Equal(Paleta.Musgo, Fondo.PorDefecto.ColorA);
+        Assert.Equal(Paleta.Papel, Fondo.PorDefecto.ColorA);
         Assert.Equal(0, Fondo.PorDefecto.Velo);
     }
 
@@ -36,23 +36,24 @@ public class FondoTests
     public void Contraste_BlancoNegro_Es21() => Assert.Equal(21, Contraste.Razon("#FFFFFF", "#000000"), 1);
 
     [Fact]
-    public void FondoClaro_LlevaVelo_YConElVeloElTextoSeLee()
+    public void FondoOscuro_UsaLaPaletaDeNoche_SinDeslavarse()
     {
-        var f = Fondo.Solido("#F3E3B0"); // mantequilla
-        Assert.True(f.Velo > 0.5);
-        var visto = ColorJ.Mezclar(f.ColorA, Paleta.Musgo, f.Velo);
-        Assert.True(Contraste.Razon(Paleta.TextoClaro, visto) >= Contraste.MinimoTexto);
+        var f = Fondo.Solido("#1F3A2B"); // bosque profundo
+        Assert.True(f.Oscuro);
+        Assert.Equal(0, f.Velo);
+        Assert.Equal(Paleta.TextoClaro, f.ColorTexto);
+        Assert.False(Fondo.PorDefecto.Oscuro);
     }
 
     [Fact]
-    public void TodosLosPredefinidos_SonLegiblesConSuVelo()
+    public void TodosLosPredefinidos_SonLegiblesConSuPaletaYSuVelo()
     {
         var fondos = Paleta.Solidos.Select(s => Fondo.Solido(s.Color))
             .Concat(Paleta.Degradados.Select(d => Fondo.Degradado(d.A, d.B)))
             .Concat(Enum.GetValues<EscenaFondo>().Select(Fondo.DeEscena));
         foreach (var f in fondos)
             foreach (var c in new[] { f.ColorA, f.ColorB })
-                Assert.True(Contraste.Razon(Paleta.TextoClaro, ColorJ.Mezclar(c, Paleta.Musgo, f.Velo)) >= Contraste.MinimoTexto, f.ToString());
+                Assert.True(Contraste.Razon(f.ColorTexto, ColorJ.Mezclar(c, f.ColorVelo, f.Velo)) >= Contraste.MinimoTexto, f.ToString());
     }
 
     [Theory]

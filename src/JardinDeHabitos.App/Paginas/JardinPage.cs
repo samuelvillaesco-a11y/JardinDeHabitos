@@ -25,7 +25,8 @@ public sealed class JardinPage : ContentPage, IRefrescable
         NavigationPage.SetHasNavigationBar(this, false);
 
         // Solo un trofeo: nada dice qué hay adentro.
-        var logros = Tema.Boton("🏆", Tema.MusgoClaro, Tema.Hueso);
+        var logros = Tema.Boton(Iconos.Trofeo, Tema.MusgoClaro, Tema.Hueso);
+        logros.FontFamily = Tema.FuenteIconos;
         logros.FontSize = 24;
         logros.WidthRequest = 60;
         logros.HeightRequest = 56;

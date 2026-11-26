@@ -28,7 +28,7 @@ public sealed class CerrojoPage : ContentPage, IPrivada
             VerticalOptions = LayoutOptions.Center,
             Children =
             {
-                Tema.Texto("🔒", 56, Tema.FuenteTitulo),
+                Tema.Icono(Iconos.Candado, 52),
                 Tema.Titulo("Tu jardín está bajo llave", 28),
                 Tema.Texto("Verifica que eres tú para entrar.", 16, color: Tema.HuesoTenue),
                 abrir,

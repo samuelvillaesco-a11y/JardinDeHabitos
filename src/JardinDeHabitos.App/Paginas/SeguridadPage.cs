@@ -36,7 +36,7 @@ public sealed class SeguridadPage : ContentPage, IPrivada, IConLlave
         var tipo = await Seguridad.TipoAsync();
         bool propio = tipo != TipoCandado.Telefono;
         _pila.Clear();
-        _pila.Add(Tema.Titulo("🔒 Seguridad", 30));
+        _pila.Add(Tema.Titulo("Seguridad", 30));
 
         _pila.Add(Tema.Texto("Tu candado", 19, Tema.FuenteTitulo, Tema.Hoja));
         _pila.Add(Tema.Parcela(new VerticalStackLayout

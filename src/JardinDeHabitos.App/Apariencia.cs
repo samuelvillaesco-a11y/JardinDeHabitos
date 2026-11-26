@@ -4,8 +4,8 @@ namespace JardinDeHabitos.App;
 
 /// <summary>
 /// El fondo que eligió el usuario (color, degradado o escena), guardado en Preferences y aplicado a
-/// las pantallas principales. Encima va un velo verde musgo lo bastante opaco para que el texto
-/// claro se lea (contraste WCAG ≥ 4.5:1, calculado en <see cref="Fondo.Velo"/>).
+/// las pantallas principales. Encima va un velo (papel o musgo, según la paleta) lo bastante opaco
+/// para que el texto se lea (contraste WCAG ≥ 4.5:1, calculado en <see cref="Fondo.Velo"/>).
 /// </summary>
 public static class Apariencia
 {
@@ -56,7 +56,7 @@ public sealed class CapaFondo : Grid
 {
     private readonly BoxView _color = new() { InputTransparent = true };
     private readonly Image _escena = new() { Aspect = Aspect.AspectFill, InputTransparent = true };
-    private readonly BoxView _velo = new() { Color = Tema.Musgo, InputTransparent = true };
+    private readonly BoxView _velo = new() { InputTransparent = true };
 
     public View? Contenido { get; }
 
@@ -77,6 +77,7 @@ public sealed class CapaFondo : Grid
         _color.Background = Apariencia.Pincel(f);
         _escena.IsVisible = f.Tipo == TipoFondo.Escena;
         if (_escena.IsVisible) _escena.Source = Apariencia.ImagenDe(f.Escena);
+        _velo.Color = Microsoft.Maui.Graphics.Color.FromArgb(f.ColorVelo);
         _velo.Opacity = f.Velo;
         _velo.IsVisible = f.Velo > 0;
     }

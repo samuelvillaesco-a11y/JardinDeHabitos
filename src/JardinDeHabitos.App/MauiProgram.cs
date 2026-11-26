@@ -15,7 +15,8 @@ public static class MauiProgram
             {
                 fonts.AddFont("Nunito-Regular.ttf", Tema.Fuente);
                 fonts.AddFont("Nunito-Bold.ttf", Tema.FuenteNegrita);
-                fonts.AddFont("Nunito-ExtraBold.ttf", Tema.FuenteTitulo);
+                fonts.AddFont("Lora-SemiBold.ttf", Tema.FuenteTitulo);
+                fonts.AddFont("Lucide.ttf", Tema.FuenteIconos);
             });
 
 #if DEBUG

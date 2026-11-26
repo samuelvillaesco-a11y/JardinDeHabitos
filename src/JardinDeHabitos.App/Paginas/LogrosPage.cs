@@ -41,7 +41,7 @@ public sealed class LogrosPage : ContentPage, IPrivada, IConLlave
 
     private IReadOnlyList<EntradaEstante> _estante = [];
     private readonly VerticalStackLayout _lista = new() { Padding = new Thickness(18, 8, 18, 28), Spacing = 6 };
-    private readonly Button _botonFiltros = Tema.Boton("⚙ Filtrar", Tema.MusgoClaro, Tema.Hueso);
+    private readonly Button _botonFiltros = Tema.Boton(Iconos.Filtros, "Filtrar", Tema.MusgoClaro, Tema.Hueso);
     private readonly Label _resumenFiltro = Tema.Texto("", 14, color: Tema.HuesoTenue);
 
     // Hoja de filtros (se desliza desde abajo).
@@ -104,7 +104,7 @@ public sealed class LogrosPage : ContentPage, IPrivada, IConLlave
                         Spacing = 6,
                         Children =
                         {
-                            Tema.Titulo("🏆 Tu estante", 30),
+                            Tema.Titulo("Tu estante", 30),
                             Tema.Texto("Toca un emblema para ver qué significa.", 15, color: Tema.HuesoTenue),
                         },
                     },
@@ -310,7 +310,7 @@ public sealed class LogrosPage : ContentPage, IPrivada, IConLlave
         if (_orden != Orden.Categoria)
             partes.Add(_orden switch { Orden.NuevosPrimero => "Nuevos primero", Orden.Recientes => "Más recientes", _ => "Más antiguos" });
 
-        _botonFiltros.Text = partes.Count == 0 ? "⚙ Filtrar" : $"⚙ Filtrar · {partes.Count}";
+        _botonFiltros.Text = partes.Count == 0 ? "Filtrar" : $"Filtrar · {partes.Count}";
         _resumenFiltro.Text = string.Join(" · ", partes);
     }
 

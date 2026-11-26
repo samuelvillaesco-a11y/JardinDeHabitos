@@ -13,34 +13,32 @@ public sealed class AjustesPage : ContentPage
         var musica = new Switch { IsToggled = Musica.Encendida, OnColor = Tema.Hoja, ThumbColor = Tema.Hueso, VerticalOptions = LayoutOptions.Center };
         musica.Toggled += (_, e) => Musica.Encendida = e.Value;
         SemanticProperties.SetDescription(musica, "Música del jardín");
-        var filaMusica = new Grid { ColumnDefinitions = [new(GridLength.Star), new(GridLength.Auto)], ColumnSpacing = 12 };
-        filaMusica.Add(new VerticalStackLayout
-        {
-            Spacing = 4,
-            Children =
-            {
-                Tema.Texto("🎵 Música del jardín", 17, Tema.FuenteNegrita),
-                Tema.Texto("Una melodía tranquila de bosque, en bucle. Se pausa cuando sales de la app.", 14, color: Tema.HuesoTenue),
-            },
-        }, 0);
-        filaMusica.Add(musica, 1);
+        var filaMusica = Fila(Iconos.Musica, "Música del jardín", "Una melodía tranquila de bosque, en bucle. Se pausa cuando sales de la app.", musica);
 
         Content = new ScrollView
         {
             Content = new VerticalStackLayout
             {
-                Padding = new Thickness(18, 28, 18, 28),
-                Spacing = 14,
+                Padding = new Thickness(22, 28, 22, 28),
+                Spacing = 0,
                 Children =
                 {
                     Tema.Titulo("Ajustes", 34),
-                    Tema.Parcela(filaMusica),
-                    Entrada("🆘 Pedir ayuda", "911, tus jardineros y la Línea de la Vida. Siempre a la mano, sin candado.", () => this.UnaVez(() => new AyudaPage())),
-                    Entrada("👤 Perfil y jardineros", "Tus datos (opcionales) y tus personas de confianza.", () => this.Verificado("Tu perfil", () => new PerfilPage())),
-                    Entrada("🎨 Personalización", "Colores, degradados y escenas para el fondo.", () => this.UnaVez(() => new PersonalizacionPage())),
-                    Entrada("🔒 Seguridad", "Tu candado y qué partes van bajo llave.", () => this.Verificado("Ajustes de seguridad", () => new SeguridadPage())),
-                    Entrada("🛡️ Privacidad", "Qué pasa con tus datos (spoiler: nada sale de tu teléfono).", () => this.UnaVez(() => new PrivacidadPage())),
-                    Entrada("🌱 Acerca de", "Versión, licencia y créditos.", () => this.UnaVez(() => new AcercaDePage())),
+                    Raya(),
+                    filaMusica,
+                    Raya(),
+                    Entrada(Iconos.Salvavidas, "Pedir ayuda", "911, tus jardineros y la Línea de la Vida. Siempre a la mano, sin candado.", () => this.UnaVez(() => new AyudaPage())),
+                    Raya(),
+                    Entrada(Iconos.Persona, "Perfil y jardineros", "Tus datos (opcionales) y tus personas de confianza.", () => this.Verificado("Tu perfil", () => new PerfilPage())),
+                    Raya(),
+                    Entrada(Iconos.Paleta, "Personalización", "Colores, degradados y escenas para el fondo.", () => this.UnaVez(() => new PersonalizacionPage())),
+                    Raya(),
+                    Entrada(Iconos.Candado, "Seguridad", "Tu candado y qué partes van bajo llave.", () => this.Verificado("Ajustes de seguridad", () => new SeguridadPage())),
+                    Raya(),
+                    Entrada(Iconos.Escudo, "Privacidad", "Qué pasa con tus datos. Nada sale de tu teléfono.", () => this.UnaVez(() => new PrivacidadPage())),
+                    Raya(),
+                    Entrada(Iconos.Brote, "Acerca de", "Versión, licencia y créditos.", () => this.UnaVez(() => new AcercaDePage())),
+                    Raya(),
                 },
             },
         };
@@ -52,13 +50,33 @@ public sealed class AjustesPage : ContentPage
         Apariencia.Aplicar(this);
     }
 
-    private static View Entrada(string titulo, string detalle, Func<Task> accion)
+    /// <summary>Renglón de cuaderno: ícono, título con detalle y algo a la derecha (flecha o interruptor).</summary>
+    private static Grid Fila(string icono, string titulo, string detalle, View derecha)
     {
-        var parcela = Tema.Parcela(new VerticalStackLayout
+        var fila = new Grid
         {
-            Spacing = 4,
+            ColumnDefinitions = [new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto)],
+            ColumnSpacing = 14,
+            Padding = new Thickness(0, 14),
+        };
+        var i = Tema.Icono(icono, 22, Tema.Hoja);
+        i.VerticalOptions = LayoutOptions.Start;
+        fila.Add(i, 0);
+        fila.Add(new VerticalStackLayout
+        {
+            Spacing = 2,
             Children = { Tema.Texto(titulo, 17, Tema.FuenteNegrita), Tema.Texto(detalle, 14, color: Tema.HuesoTenue) },
-        });
+        }, 1);
+        derecha.VerticalOptions = LayoutOptions.Center;
+        fila.Add(derecha, 2);
+        return fila;
+    }
+
+    private static BoxView Raya() => new() { HeightRequest = 1, Color = Tema.Linea };
+
+    private static View Entrada(string icono, string titulo, string detalle, Func<Task> accion)
+    {
+        var parcela = Fila(icono, titulo, detalle, Tema.Icono(Iconos.Flecha, 18, Tema.HuesoTenue));
         SemanticProperties.SetDescription(parcela, $"{titulo}. {detalle}");
         var toque = new TapGestureRecognizer();
         toque.Tapped += async (_, _) => await accion();
@@ -75,7 +93,7 @@ public sealed class PrivacidadPage : ContentPage
         Title = "Privacidad";
         BackgroundColor = Tema.Musgo;
         var pila = new VerticalStackLayout { Padding = new Thickness(18, 20, 18, 28), Spacing = 12 };
-        pila.Add(Tema.Titulo("🛡️ Tu privacidad", 30));
+        pila.Add(Tema.Titulo("Tu privacidad", 30));
         pila.Add(Tema.Texto("Jardín de Hábitos está hecho para que lo que vives aquí sea solo tuyo.", 16));
         foreach (var (titulo, texto) in Puntos) pila.Add(Tema.Parcela(new VerticalStackLayout
         {
@@ -112,7 +130,7 @@ public sealed class AcercaDePage : ContentPage
                 Spacing = 12,
                 Children =
                 {
-                    Tema.Titulo("🌱 Jardín de Hábitos", 30),
+                    Tema.Titulo("Jardín de Hábitos", 30),
                     Tema.Texto($"Versión {AppInfo.Current.VersionString}", 15, color: Tema.HuesoTenue),
                     Tema.Texto("Cada hábito que dejas es un árbol que crece. Un compañero tranquilo y privado para dejar malos hábitos, con tiempos basados en evidencia médica.", 16),
                     Tema.Parcela(new VerticalStackLayout

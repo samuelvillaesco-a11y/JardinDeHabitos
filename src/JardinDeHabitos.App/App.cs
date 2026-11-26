@@ -9,7 +9,8 @@ public class App : Application
 
     public App()
     {
-        UserAppTheme = AppTheme.Dark;
+        Tema.Usar(Apariencia.Actual.Oscuro);
+        UserAppTheme = Tema.Oscuro ? AppTheme.Dark : AppTheme.Light;
     }
 
     /// <summary>La app: tres pestañas abajo (Jardín, Blog botánico, Ajustes). Los logros se abren desde el jardín.</summary>
@@ -23,9 +24,9 @@ public class App : Application
             UnselectedTabColor = Tema.HuesoTenue,
             Children =
             {
-                Pestana(new JardinPage(), "Jardín", "🌳"),
-                Pestana(new BlogPage(), "Blog botánico", "📖"),
-                Pestana(new AjustesPage(), "Ajustes", "⚙️"),
+                Pestana(new JardinPage(), "Jardín", Iconos.Arboles),
+                Pestana(new BlogPage(), "Blog botánico", Iconos.Libro),
+                Pestana(new AjustesPage(), "Ajustes", Iconos.Ajustes),
             },
         };
         pestanas.CurrentPageChanged += (_, _) => Pantalla.Actualizar();
@@ -37,11 +38,28 @@ public class App : Application
         return pestanas;
     }
 
+    /// <summary>
+    /// El fondo nuevo pide la otra paleta: se rehacen las pantallas (leen los colores al crearse) y
+    /// se vuelve a Personalización, donde estaba el usuario.
+    /// </summary>
+    public static async Task CambiarPaleta(bool oscuro)
+    {
+        if (Current is not { } app || app.Windows.FirstOrDefault() is not { } ventana) return;
+        Tema.Usar(oscuro);
+        app.UserAppTheme = oscuro ? AppTheme.Dark : AppTheme.Light;
+        var pestanas = (TabbedPage)Jardin();
+        var ajustes = (NavigationPage)pestanas.Children[^1];
+        pestanas.CurrentPage = ajustes;
+        ventana.Page = pestanas;
+        Pantalla.Actualizar();
+        await ajustes.PushAsync(new PersonalizacionPage(), animated: false);
+    }
+
     private static NavigationPage Pestana(Page raiz, string titulo, string icono) =>
         new(raiz)
         {
             Title = titulo,
-            IconImageSource = new FontImageSource { Glyph = icono, Size = 22, Color = Tema.Hueso },
+            IconImageSource = Tema.Imagen(icono, Tema.Hueso, 22),
             BarBackgroundColor = Tema.Musgo,
             BarTextColor = Tema.Hueso,
         };

@@ -32,7 +32,7 @@ public sealed class PedirClavePage : ContentPage, IPrivada
         {
             Padding = new Thickness(24, 48, 24, 24),
             Spacing = 14,
-            Children = { Tema.Texto("🔒", 44, Tema.FuenteTitulo), Tema.Titulo(titulo, 26), _indicacion, _hueco, _error, _olvide, cancelar },
+            Children = { Tema.Icono(Iconos.Candado, 40), Tema.Titulo(titulo, 26), _indicacion, _hueco, _error, _olvide, cancelar },
         };
         CambiarModo(false);
     }

@@ -163,3 +163,11 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Llave de la base perdida (Keystore borrado/dañado → la app crea otra): `SqliteGardenStore.AbrirOApartar` aparta la base ilegible (`jardin.db3.ilegible-<fecha>`, nunca se borra) y abre una vacía; el jardín avisa una vez (`Servicios.TomarAvisoDeDatosApartados`). Antes: cierre en cada arranque.
 - Candado propio ilegible (Preferences dice PIN/patrón/clave pero SecureStorage no lo entrega): ya no se trata como "sin candado"; pide el bloqueo del teléfono y, si no hay, NO deja entrar (`Seguridad.SecretoPerdidoAsync`).
 - Intentos de PIN en serie (`SemaphoreSlim`): dos toques simultáneos ya no cuentan como un solo fallo.
+
+## Rediseño "Cuaderno de campo" (2026-11-26, rama `diseno/cuaderno-de-campo`)
+- Dos paletas en `Tema` (propiedades, no campos): papel (#F4EEDF, tinta #2E3A2C, ocre #8A5A0B, hoja #3F6A2A) y noche (la de siempre). `Fondo.Oscuro` elige la que necesite menos velo; `App.CambiarPaleta` rehace las pantallas al cambiar de paleta (leen los colores al crearse). `Pantalla.Aplicar` pinta la ventana detrás de la barra de estado y elige íconos claros u oscuros.
+- El árbol y la escena NO cambian: usan `Naturaleza` (los colores originales).
+- Títulos en Lora SemiBold (instancia fija; MAUI Android no elige peso de una variable). Íconos: `Resources/Fonts/Lucide.ttf` recortada a 20 glifos (`Iconos`); para uno nuevo hay que recortarla otra vez desde lucide-static (quitar GSUB/GPOS antes: su tabla de ligaduras rompe a pyftsubset). Emojis solo en notificaciones, caras de ánimo y teclado.
+- Ajustes como renglones con raya fina (no tarjetas). `Parcela`: radio 6, borde de 1 px.
+- Comparación con los requisitos: `~/Documentos/Jardin-rediseno-vs-requisitos.md`.
+- OJO emulador: arrancarlo desde snapshot puede devolver una versión vieja de la app (y `-t:Install` se salta si la compilación "está al día"): instalar con `adb -s emulator-5554 install -r -d <apk>`. Los datos de desarrollo de la v1.1 del emulador fallan al migrar ("Cannot add a PRIMARY KEY column"); el esquema no cambió desde v1.1, así que se cree que son datos de compilaciones intermedias del blog. Pendiente confirmar con una base real.

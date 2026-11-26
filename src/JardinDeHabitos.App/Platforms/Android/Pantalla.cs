@@ -38,6 +38,9 @@ public static class Pantalla
         bool privada = Seguridad.PantallaDebeSerPrivada || PaginaVisible() is IPrivada;
         if (privada) ventana.SetFlags(WindowManagerFlags.Secure, WindowManagerFlags.Secure);
         else ventana.ClearFlags(WindowManagerFlags.Secure);
+        // Detrás de la barra de estado se ve la ventana: que siga la paleta (papel o noche).
+        ventana.DecorView.SetBackgroundColor(Microsoft.Maui.Platform.ColorExtensions.ToPlatform(Tema.Musgo));
+        new AndroidX.Core.View.WindowInsetsControllerCompat(ventana, ventana.DecorView).AppearanceLightStatusBars = !Tema.Oscuro;
     }
 
     /// <summary>La página que el usuario ve: el modal de arriba o la página actual de la pestaña actual.</summary>

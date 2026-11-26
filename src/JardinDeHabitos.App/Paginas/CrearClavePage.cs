@@ -43,9 +43,9 @@ public sealed class CrearClavePage : ContentPage, IPrivada
             Motivo.Recuperacion => "Tu código de recuperación funcionó. Elige un candado nuevo.",
             _ => "Elige con qué se abre lo que pongas bajo llave.",
         }, 16));
-        pila.Add(Opcion("📱", "Usar el bloqueo de mi teléfono", "La misma huella, PIN o patrón con que desbloqueas el celular. Recomendado.", TipoCandado.Telefono));
-        pila.Add(Opcion("🔢", "Crear un PIN propio", $"De {ClaveLocal.PinMinimo} a {ClaveLocal.PinMaximo} números, distinto al del teléfono.", TipoCandado.Pin));
-        pila.Add(Opcion("✳️", "Dibujar un patrón propio", $"Une al menos {ClaveLocal.PatronMinimo} de los 9 puntos.", TipoCandado.Patron));
+        pila.Add(Opcion(Iconos.Celular, "Usar el bloqueo de mi teléfono", "La misma huella, PIN o patrón con que desbloqueas el celular. Recomendado.", TipoCandado.Telefono));
+        pila.Add(Opcion(Iconos.Numeral, "Crear un PIN propio", $"De {ClaveLocal.PinMinimo} a {ClaveLocal.PinMaximo} números, distinto al del teléfono.", TipoCandado.Pin));
+        pila.Add(Opcion(Iconos.Cuadricula, "Dibujar un patrón propio", $"Une al menos {ClaveLocal.PatronMinimo} de los 9 puntos.", TipoCandado.Patron));
         pila.Add(_error);
         if (_motivo == Motivo.PrimeraVez)
         {
@@ -66,7 +66,7 @@ public sealed class CrearClavePage : ContentPage, IPrivada
     private View Opcion(string icono, string titulo, string detalle, TipoCandado tipo)
     {
         var fila = new Grid { ColumnDefinitions = [new(GridLength.Auto), new(GridLength.Star)], ColumnSpacing = 14 };
-        fila.Add(Tema.Texto(icono, 30), 0);
+        fila.Add(Tema.Icono(icono, 26, Tema.Hoja), 0);
         fila.Add(new VerticalStackLayout
         {
             Spacing = 2,

@@ -24,8 +24,8 @@ public enum EscenaFondo
 /// </summary>
 public sealed record Fondo(TipoFondo Tipo, string ColorA, string ColorB, EscenaFondo Escena = EscenaFondo.Bosque)
 {
-    /// <summary>El de siempre: verde musgo.</summary>
-    public static Fondo PorDefecto { get; } = new(TipoFondo.Solido, Paleta.Musgo, Paleta.Musgo);
+    /// <summary>El de siempre: papel de cuaderno de campo.</summary>
+    public static Fondo PorDefecto { get; } = new(TipoFondo.Solido, Paleta.Papel, Paleta.Papel);
 
     public static Fondo Solido(string color) => new(TipoFondo.Solido, ColorHex.Normalizar(color), ColorHex.Normalizar(color));
 
@@ -48,10 +48,20 @@ public sealed record Fondo(TipoFondo Tipo, string ColorA, string ColorB, EscenaF
     }
 
     /// <summary>
-    /// Opacidad del velo verde musgo que va encima del fondo para que el texto claro de la app se lea
-    /// (contraste WCAG ≥ 4.5:1 contra el color más claro del fondo). 0 si el fondo ya es oscuro.
+    /// Fondo oscuro: la app usa la paleta de noche (texto claro, velo musgo); si no, la de papel
+    /// (tinta, velo papel). Gana la que necesite menos velo, así ningún fondo se deslava.
     /// </summary>
-    public double Velo => Contraste.VeloNecesario([ColorA, ColorB], Paleta.TextoClaro, Paleta.Musgo, Contraste.MinimoTexto);
+    public bool Oscuro => VeloCon(Paleta.TextoClaro, Paleta.Musgo) < VeloCon(Paleta.Tinta, Paleta.Papel);
+
+    /// <summary>Opacidad del velo para que el texto se lea (WCAG ≥ 4.5:1). 0 si no hace falta.</summary>
+    public double Velo => Oscuro ? VeloCon(Paleta.TextoClaro, Paleta.Musgo) : VeloCon(Paleta.Tinta, Paleta.Papel);
+
+    public string ColorVelo => Oscuro ? Paleta.Musgo : Paleta.Papel;
+
+    public string ColorTexto => Oscuro ? Paleta.TextoClaro : Paleta.Tinta;
+
+    private double VeloCon(string texto, string velo) =>
+        Contraste.VeloNecesario([ColorA, ColorB], texto, velo, Contraste.MinimoTexto);
 }
 
 /// <summary>Colores calmantes recomendados: tonos de bosque, otoño y miel.</summary>
@@ -59,9 +69,13 @@ public static class Paleta
 {
     public const string Musgo = "#27331F";
     public const string TextoClaro = "#F3EBD3";
+    /// <summary>Fondo y texto de la app (cuaderno de campo).</summary>
+    public const string Papel = "#F4EEDF";
+    public const string Tinta = "#2E3A2C";
 
     public static IReadOnlyList<(string Nombre, string Color)> Solidos { get; } =
     [
+        ("Papel", Papel),
         ("Verde musgo", Musgo),
         ("Bosque profundo", "#1F3A2B"),
         ("Oliva", "#5B6B2F"),

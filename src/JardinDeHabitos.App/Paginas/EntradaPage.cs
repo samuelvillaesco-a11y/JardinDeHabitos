@@ -72,7 +72,7 @@ public sealed class EntradaPage : ContentPage, IPrivada, IConLlave
             Spacing = 14,
             Children =
             {
-                Tema.Titulo(e is null ? "✍️ Nueva entrada" : "✍️ Editar entrada", 28),
+                Tema.Titulo(e is null ? "Nueva entrada" : "Editar entrada", 28),
                 Tema.Texto(Primera(Tema.Fecha(dia)), 16, color: Tema.HuesoTenue),
                 Tema.Texto("Todo es opcional: responde solo lo que quieras.", 14, color: Tema.HuesoTenue),
                 Seccion("¿Cómo estuvo tu ánimo?", null, _animo),

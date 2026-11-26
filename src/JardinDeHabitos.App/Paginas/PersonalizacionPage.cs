@@ -76,7 +76,7 @@ public sealed class PersonalizacionPage : ContentPage
                 Spacing = 14,
                 Children =
                 {
-                    Tema.Titulo("🎨 Personalización", 30),
+                    Tema.Titulo("Personalización", 30),
                     new Border { Content = _muestra, StrokeThickness = 0, StrokeShape = new RoundRectangle { CornerRadius = 20 } },
                     Seccion("Colores recomendados", "Tonos calmantes de bosque, otoño y miel."),
                     Rejilla(Paleta.Solidos.Select(s => (View)Ficha(Muestra(s.Color, 56, 56, 28), s.Nombre, Fondo.Solido(s.Color)))),
@@ -105,6 +105,11 @@ public sealed class PersonalizacionPage : ContentPage
     private void Elegir(Fondo f)
     {
         Apariencia.Elegir(f);
+        if (f.Oscuro != Tema.Oscuro)
+        {
+            _ = App.CambiarPaleta(f.Oscuro);
+            return;
+        }
         _muestra.Pintar(f);
         Apariencia.Aplicar(this);
     }

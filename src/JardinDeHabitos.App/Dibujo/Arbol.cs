@@ -141,7 +141,7 @@ public static class Arbol
                 c.FillEllipse(g.CentroX - s * 0.06f, g.Suelo - s * 0.06f, s * 0.12f, s * 0.085f);
                 c.Relleno(Colors.White.WithAlpha(0.25f));
                 c.FillEllipse(g.CentroX - s * 0.035f, g.Suelo - s * 0.05f, s * 0.04f, s * 0.025f);
-                c.StrokeColor = Tema.Hoja;
+                c.StrokeColor = Naturaleza.Hoja;
                 c.StrokeSize = s * 0.014f;
                 c.StrokeLineCap = LineCap.Round;
                 c.DrawLine(g.CentroX + s * 0.01f, g.Suelo - s * 0.055f, g.CentroX + s * 0.03f, g.Suelo - s * 0.10f);
@@ -176,7 +176,7 @@ public static class Arbol
         var z = g.Zona;
         var area = new RectF(z.X - z.Width * 0.2f, z.Y - z.Height * 0.2f, z.Width * 1.4f, z.Height * 1.4f);
         c.SetFillPaint(new RadialGradientPaint(
-            [new PaintGradientStop(0, Tema.Miel.WithAlpha(0.28f)), new PaintGradientStop(1, Tema.Miel.WithAlpha(0f))],
+            [new PaintGradientStop(0, Naturaleza.Miel.WithAlpha(0.28f)), new PaintGradientStop(1, Naturaleza.Miel.WithAlpha(0f))],
             new Point(0.5, 0.5), 0.5), area);
         c.FillEllipse(area);
     }
@@ -196,7 +196,7 @@ public static class Arbol
     {
         float s = g.Escala;
         var m = new RectF(g.CentroX - s * 0.40f, g.Suelo - s * 0.06f, s * 0.80f, s * 0.18f);
-        c.SetFillPaint(Degradado(Tema.Tierra, Tema.TierraOscura), m);
+        c.SetFillPaint(Degradado(Naturaleza.Tierra, Naturaleza.TierraOscura), m);
         c.FillEllipse(m);
         if (regado)
         {
@@ -224,7 +224,7 @@ public static class Arbol
     private static void Tallo(ICanvas c, GeometriaArbol g)
     {
         float s = g.Escala;
-        c.StrokeColor = Tema.HojaOscura;
+        c.StrokeColor = Naturaleza.HojaOscura;
         c.StrokeSize = s * 0.014f;
         c.StrokeLineCap = LineCap.Round;
         var p = new PathF(g.CentroX, g.Suelo);
@@ -243,7 +243,7 @@ public static class Arbol
         p.QuadTo(largo * 0.5f, -largo * 0.45f, largo, 0);
         p.QuadTo(largo * 0.5f, largo * 0.45f, 0, 0);
         p.Close();
-        c.SetFillPaint(Degradado(Tema.Hoja, Tema.HojaOscura), new RectF(0, -largo * 0.3f, largo, largo * 0.6f));
+        c.SetFillPaint(Degradado(Naturaleza.Hoja, Naturaleza.HojaOscura), new RectF(0, -largo * 0.3f, largo, largo * 0.6f));
         c.FillPath(p);
         c.RestoreState();
     }
@@ -256,7 +256,7 @@ public static class Arbol
         p.LineTo(g.CentroX + w * 0.45f, g.TroncoArriba - w);
         p.QuadTo(g.CentroX + w * 0.4f, (g.Suelo + g.TroncoArriba) / 2, g.CentroX + w * 0.9f, g.Suelo);
         p.Close();
-        c.SetFillPaint(Degradado(CortezaClara, Tema.Corteza, horizontal: true),
+        c.SetFillPaint(Degradado(CortezaClara, Naturaleza.Corteza, horizontal: true),
             new RectF(g.CentroX - w, g.TroncoArriba, w * 2, g.Suelo - g.TroncoArriba));
         c.FillPath(p);
     }
@@ -264,7 +264,7 @@ public static class Arbol
     private static void Copa(ICanvas c, GeometriaArbol g, bool enferma)
     {
         var z = g.Copa;
-        c.SetFillPaint(enferma ? Degradado(CopaEnfermaArriba, CopaEnfermaAbajo) : Degradado(Tema.Hoja, Tema.HojaOscura), z);
+        c.SetFillPaint(enferma ? Degradado(CopaEnfermaArriba, CopaEnfermaAbajo) : Degradado(Naturaleza.Hoja, Naturaleza.HojaOscura), z);
         foreach (var (x, y, r) in Manchas)
             c.FillCircle(z.X + z.Width * x, z.Y + z.Height * y, z.Width * r);
         // Brillo plano arriba a la izquierda.
@@ -290,7 +290,7 @@ public static class Arbol
                         float a = i * MathF.Tau / 5;
                         c.FillCircle(x + MathF.Cos(a) * r * 0.8f, y + MathF.Sin(a) * r * 0.8f, r * 0.6f);
                     }
-                    c.Relleno(Tema.Miel);
+                    c.Relleno(Naturaleza.Miel);
                     c.FillCircle(x, y, r * 0.45f);
                 }
                 break;
@@ -338,7 +338,7 @@ public static class Arbol
         int n = Math.Min(e.Cicatrices, 8);
         if (n == 0) return;
         float s = g.Escala;
-        c.StrokeColor = Tema.Hueso.WithAlpha(0.75f);
+        c.StrokeColor = Naturaleza.Hueso.WithAlpha(0.75f);
         c.StrokeLineCap = LineCap.Round;
 
         bool hayTronco = e.Etapa >= GrowthStage.ArbolJoven;

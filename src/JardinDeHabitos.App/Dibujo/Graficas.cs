@@ -6,7 +6,7 @@ namespace JardinDeHabitos.App.Dibujo;
 public static class ColoresGrafica
 {
     public static readonly Color Rejilla = Color.FromArgb("#4A5A3E");
-    public static readonly Color Eje = Tema.HuesoTenue;
+    public static Color Eje => Tema.HuesoTenue;
 
     /// <summary>Intensidad 0–4 de un síntoma: un solo tono (miel), de apagado a brillante.</summary>
     public static readonly Color[] Intensidad =
