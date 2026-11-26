@@ -66,6 +66,14 @@ public static class Seguridad
         Preferences.Default.Set(ClaveTipo, (int)TipoCandado.Telefono);
     }
 
+    /// <summary>
+    /// Había un PIN, patrón o clave propios (Preferences lo recuerda), pero el almacenamiento seguro
+    /// ya no los entrega (Keystore dañado o borrado). No debe tratarse como "sin candado".
+    /// </summary>
+    private static async Task<bool> SecretoPerdidoAsync() =>
+        Preferences.Default.Get(ClaveTipo, (int)TipoCandado.Telefono) != (int)TipoCandado.Telefono
+        && !await TieneClaveAsync();
+
     public static async Task<bool> TieneClaveAsync() => HashDeClave.Leer(await LeerAsync(ClaveHash)) is not null;
 
     /// <summary>
@@ -112,7 +120,20 @@ public static class Seguridad
         return Intentos.Restante(fallidos, ultimo, DateTimeOffset.UtcNow);
     }
 
+    /// <summary>
+    /// Un intento a la vez: si dos toques prueban al mismo tiempo, los dos leerían el mismo número de
+    /// fallos y contarían como uno solo.
+    /// </summary>
+    private static readonly SemaphoreSlim _unIntento = new(1, 1);
+
     private static async Task<ResultadoClave> ProbarAsync(string clave, string? texto)
+    {
+        await _unIntento.WaitAsync();
+        try { return await ProbarUnoAsync(clave, texto); }
+        finally { _unIntento.Release(); }
+    }
+
+    private static async Task<ResultadoClave> ProbarUnoAsync(string clave, string? texto)
     {
         if (await EsperaRestanteAsync() > TimeSpan.Zero) return ResultadoClave.Esperar;
         var guardado = HashDeClave.Leer(await LeerAsync(clave));
@@ -170,9 +191,18 @@ public static class Seguridad
             if (!Activo(Seguro.DobleVerificacion)) return true;
         }
 
+        bool perdido = !tieneClave && await SecretoPerdidoAsync();
         var r = await Bloqueo.PedirAsync(titulo, tieneClave ? "Segundo paso: el bloqueo del teléfono" : "Confirma que eres tú");
         if (r == Bloqueo.Resultado.Abierto) return true;
         if (r == Bloqueo.Resultado.Cancelado) return false;
+        if (perdido)
+        {
+            // Sin candado propio legible y sin bloqueo del teléfono: no se abre (antes dejaba pasar).
+            await pagina.DisplayAlertAsync("No se pudo leer tu candado",
+                "Android ya no entrega tu PIN, patrón o clave. Para entrar, activa un PIN, patrón o huella en el teléfono.",
+                "Entendido");
+            return false;
+        }
         // El teléfono no tiene bloqueo: no hay segundo factor posible.
         await pagina.DisplayAlertAsync("Tu teléfono no tiene bloqueo",
             tieneClave

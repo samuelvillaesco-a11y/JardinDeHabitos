@@ -16,9 +16,23 @@ public static class Servicios
         {
             if (_jardin is not null) return _jardin;
             var (archivo, reloj) = Configuracion();
-            _store = new SqliteGardenStore(Path.Combine(FileSystem.AppDataDirectory, archivo), llave: LlaveDeDatos());
+            _store = SqliteGardenStore.AbrirOApartar(Path.Combine(FileSystem.AppDataDirectory, archivo), LlaveDeDatos(), out var apartada);
+            if (apartada is not null) Preferences.Default.Set(ClaveApartada, true);
             return _jardin = new GardenService(_store, new GrowthStageCalculator(reloj));
         }
+    }
+
+    private const string ClaveApartada = "datos.apartada";
+
+    /// <summary>
+    /// True una sola vez si la base no se pudo descifrar y se empezó de cero (la vieja quedó apartada
+    /// en el teléfono, sin borrar). La página del jardín lo avisa.
+    /// </summary>
+    public static bool TomarAvisoDeDatosApartados()
+    {
+        if (!Preferences.Default.Get(ClaveApartada, false)) return false;
+        Preferences.Default.Remove(ClaveApartada);
+        return true;
     }
 
     private const string ClaveLlave = "datos.llave";

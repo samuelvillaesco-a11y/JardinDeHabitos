@@ -38,6 +38,28 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         }
     }
 
+    /// <summary>
+    /// Abre la base. Si no se puede descifrar (Android perdió la llave del Keystore y la app trajo
+    /// otra), la base se aparta sin borrarla y se abre una vacía: mejor eso que cerrarse en cada
+    /// arranque. <paramref name="apartada"/> dice adónde se movió (null si no hizo falta).
+    /// </summary>
+    public static SqliteGardenStore AbrirOApartar(string rutaArchivo, string llave, out string? apartada, DateOnly? hoy = null)
+    {
+        apartada = null;
+        try
+        {
+            return new SqliteGardenStore(rutaArchivo, hoy, llave);
+        }
+        catch (SQLiteException e) when (e.Result == SQLite3.Result.NonDBFile)
+        {
+            apartada = $"{rutaArchivo}.ilegible-{DateTime.UtcNow:yyyyMMddHHmmss}";
+            File.Move(rutaArchivo, apartada);
+            foreach (var extra in new[] { "-wal", "-shm", "-journal" })
+                if (File.Exists(rutaArchivo + extra)) File.Move(rutaArchivo + extra, apartada + extra);
+            return new SqliteGardenStore(rutaArchivo, hoy, llave);
+        }
+    }
+
     public int VersionEsquema => _db.ExecuteScalar<int>("PRAGMA user_version");
 
     /// <summary>Una llave nueva: 32 bytes de azar criptográfico en hexadecimal.</summary>

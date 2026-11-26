@@ -113,6 +113,10 @@ public sealed class JardinPage : ContentPage, IRefrescable
         {
             var jardin = Servicios.Jardin;
             Pintar(jardin.Jardin(), jardin.Hoy);
+            if (Servicios.TomarAvisoDeDatosApartados())
+                await DisplayAlertAsync("Tu jardín empezó de cero",
+                    "Android perdió la llave que protegía tus datos y ya no se podían abrir. Para que la app siga funcionando, se guardaron aparte en el teléfono y empezaste con un jardín nuevo.",
+                    "Entendido");
             await Avisos.AnunciarLogros(this);
         }
         catch (Exception ex)

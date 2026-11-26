@@ -189,6 +189,33 @@ public sealed class SqliteGardenStoreTests : IDisposable
     }
 
     [Fact]
+    public void AbrirOApartar_LlavePerdida_ApartaLaBaseSinBorrarla_YAbreUnaNueva()
+    {
+        // El Keystore perdió la llave: la app trae otra. Antes se cerraba en cada arranque.
+        using (var store = new SqliteGardenStore(_ruta, llave: SqliteGardenStore.NuevaLlave())) store.Guardar(Registro());
+        var original = File.ReadAllBytes(_ruta);
+
+        using var nueva = SqliteGardenStore.AbrirOApartar(_ruta, SqliteGardenStore.NuevaLlave(), out var apartada);
+
+        Assert.Empty(nueva.Cargar());
+        Assert.NotNull(apartada);
+        Assert.Equal(original, File.ReadAllBytes(apartada));
+        File.Delete(apartada);
+    }
+
+    [Fact]
+    public void AbrirOApartar_LlaveCorrecta_NoApartaNada()
+    {
+        var llave = SqliteGardenStore.NuevaLlave();
+        using (var store = new SqliteGardenStore(_ruta, llave: llave)) store.Guardar(Registro());
+
+        using var otra = SqliteGardenStore.AbrirOApartar(_ruta, llave, out var apartada);
+
+        Assert.Null(apartada);
+        Assert.Single(otra.Cargar());
+    }
+
+    [Fact]
     public void BaseEnClaro_SeCifraAlAbrirConLlave_SinPerderDatos()
     {
         var r = Registro();

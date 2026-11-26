@@ -158,3 +158,8 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Cada versión nueva: crear el GitHub Release como siempre y luego `scripts/publicar-fdroid.sh <apk firmado>` (copia el APK, actualiza CurrentVersionCode y metadatos desde fastlane, regenera y firma el índice, sube sin `repo/status`, que trae rutas locales).
 - OJO: `fdroid init` usa el nombre del equipo como CN si no se pasa `--repo-keyalias`; el `repo_icon` se busca relativo a `trabajo/`, no a `repo/icons`.
 - Novedades en el índice v2: requieren una entrada `Builds` por versionCode en `metadata/org.jardindehabitos.app.yml` (el script la genera desde los APK de `repo/`). Nunca `disable` en esas entradas: `fdroid update` borra los APK de compilaciones desactivadas.
+
+## Arreglos de la auditoría ponytail (2026-11-26)
+- Llave de la base perdida (Keystore borrado/dañado → la app crea otra): `SqliteGardenStore.AbrirOApartar` aparta la base ilegible (`jardin.db3.ilegible-<fecha>`, nunca se borra) y abre una vacía; el jardín avisa una vez (`Servicios.TomarAvisoDeDatosApartados`). Antes: cierre en cada arranque.
+- Candado propio ilegible (Preferences dice PIN/patrón/clave pero SecureStorage no lo entrega): ya no se trata como "sin candado"; pide el bloqueo del teléfono y, si no hay, NO deja entrar (`Seguridad.SecretoPerdidoAsync`).
+- Intentos de PIN en serie (`SemaphoreSlim`): dos toques simultáneos ya no cuentan como un solo fallo.
