@@ -14,6 +14,7 @@ namespace JardinDeHabitos.App;
 /// El widget no abre la base cifrada: guarda solo nombre y número del primer jardinero en unas
 /// preferencias privadas de la app (sin respaldos), que se actualizan cada vez que cambian los
 /// jardineros. Así se pinta rápido y sin tocar el Keystore; el nombre ya está a la vista en el widget.
+/// Esa copia sin cifrar solo existe mientras haya un widget puesto: al quitarlo se borra.
 /// </summary>
 [BroadcastReceiver(Label = "@string/widget_jardinero_nombre", Exported = true)]
 [IntentFilter([AppWidgetManager.ActionAppwidgetUpdate])]
@@ -45,11 +46,25 @@ public class JardineroWidget : AppWidgetProvider
     public static void Sincronizar(Jardinero? primero)
     {
         var context = Android.App.Application.Context;
-        Guardar(context, primero);
         var manager = AppWidgetManager.GetInstance(context);
         var ids = manager?.GetAppWidgetIds(new ComponentName(context, Java.Lang.Class.FromType(typeof(JardineroWidget))));
-        if (manager is not null && ids is { Length: > 0 }) manager.UpdateAppWidget(ids, Vista(context));
+        if (manager is null || ids is not { Length: > 0 })
+        {
+            Borrar(context); // sin widget no hace falta la copia sin cifrar
+            return;
+        }
+        Guardar(context, primero);
+        manager.UpdateAppWidget(ids, Vista(context));
     }
+
+    /// <summary>Se quitó el último widget: se borra el nombre y número guardados sin cifrar.</summary>
+    public override void OnDisabled(Context? context)
+    {
+        base.OnDisabled(context);
+        if (context is not null) Borrar(context);
+    }
+
+    private static void Borrar(Context c) => Preferencias(c).Edit()!.Clear()!.Apply();
 
     private static ISharedPreferences Preferencias(Context c) => c.GetSharedPreferences(Archivo, FileCreationMode.Private)!;
 

@@ -61,7 +61,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
                     Fila(_peso, _altura),
                     Tema.Texto("¿Cuánta actividad física haces?", 15),
                     _actividad,
-                    Tema.Texto("Moderada = 150 a 300 minutos a la semana de caminar rápido, bici o similar (recomendación de la OMS).", 13, color: Tema.HuesoTenue),
+                    Tema.Texto("Moderada = 150 a 300 minutos a la semana de caminar rápido, bici o similar (recomendación de la OMS).", 14, color: Tema.HuesoTenue),
                     _aviso,
                     guardar,
                     Tema.Texto("Tus jardineros", 22, Tema.FuenteTitulo, Tema.Hoja),
@@ -69,7 +69,7 @@ public sealed class PerfilPage : ContentPage, IPrivada, IConLlave
                     _listaJardineros,
                     desdeContactos,
                     aMano,
-                    Tema.Texto("Al elegir de tus contactos, Android solo le pasa a la app el contacto que tocas: no ve el resto de tu agenda.", 13, color: Tema.HuesoTenue),
+                    Tema.Texto("Al elegir de tus contactos, Android solo le pasa a la app el contacto que tocas: no ve el resto de tu agenda.", 14, color: Tema.HuesoTenue),
                 },
             },
         };

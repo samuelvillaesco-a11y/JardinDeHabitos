@@ -18,7 +18,7 @@ public static class Tema
     public static Color MusgoClaro { get; private set; } = Color.FromArgb("#EAE2CC");
     public static Color Hoja { get; private set; } = Color.FromArgb("#3F6A2A");
     public static Color HojaOscura { get; private set; } = Color.FromArgb("#2F5020");
-    public static Color Miel { get; private set; } = Color.FromArgb("#8A5A0B");
+    public static Color Miel { get; private set; } = Color.FromArgb("#7F5209");
     public static Color Hueso { get; private set; } = Color.FromArgb("#2E3A2C");
     public static Color HuesoTenue { get; private set; } = Color.FromArgb("#5C5A47");
     public static Color Linea { get; private set; } = Color.FromArgb("#C9BFA6");
@@ -33,7 +33,7 @@ public static class Tema
             ? (Color.FromArgb("#27331F"), Color.FromArgb("#33422A"), Color.FromArgb("#8DB255"), Color.FromArgb("#4F7A32"),
                Color.FromArgb("#F2B33D"), Color.FromArgb("#F3EBD3"), Color.FromArgb("#B8B49A"), Color.FromArgb("#4A5A3E"))
             : (Color.FromArgb("#F4EEDF"), Color.FromArgb("#EAE2CC"), Color.FromArgb("#3F6A2A"), Color.FromArgb("#2F5020"),
-               Color.FromArgb("#8A5A0B"), Color.FromArgb("#2E3A2C"), Color.FromArgb("#5C5A47"), Color.FromArgb("#C9BFA6"));
+               Color.FromArgb("#7F5209"), Color.FromArgb("#2E3A2C"), Color.FromArgb("#5C5A47"), Color.FromArgb("#C9BFA6"));
     }
 
     public const string Fuente = "Nunito";

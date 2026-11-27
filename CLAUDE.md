@@ -164,6 +164,14 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Candado propio ilegible (Preferences dice PIN/patrón/clave pero SecureStorage no lo entrega): ya no se trata como "sin candado"; pide el bloqueo del teléfono y, si no hay, NO deja entrar (`Seguridad.SecretoPerdidoAsync`).
 - Intentos de PIN en serie (`SemaphoreSlim`): dos toques simultáneos ya no cuentan como un solo fallo.
 
+## v1.3: pulido de la auditoría y copia cifrada (2026-11-27)
+- Copia del jardín (Seguridad › Guardar una copia / Recuperar desde una copia): `Core/Respaldo.cs`. Es la base SQLCipher completa exportada con `sqlcipher_export` y cifrada con la contraseña del usuario (≥ 10 caracteres, nunca se guarda). Recuperar: `Preparar` (abre con la contraseña, valida versión y la recifra con la llave del teléfono, sin tocar nada) → `Instalar` (la base actual queda en `jardin.db3.antes-de-importar-<fecha>`, nunca se borra). Archivos por Storage Access Framework (`Platforms/Android/Archivos.cs`, sin permisos de almacenamiento).
+- Selectores del sistema (archivos, contactos): `App.SalidaAlSelector()` da 3 min de gracia para que la sección con llave no se cierre a media operación.
+- Llave de la base directa (`x'…'`, 32 bytes): SQLCipher ya no deriva la llave en cada apertura. Las bases de hasta la v1.2 (llave como contraseña) se pasan solas con `PRAGMA rekey` al abrir (`SqliteGardenStore.AbrirCifrada`).
+- Widget de jardinero: la copia sin cifrar de nombre y número solo existe mientras haya un widget puesto (`OnDisabled` la borra). Avisado en Seguridad.
+- Diseño: parcela vacía con borde punteado (contraste ≥ 3:1), ocre #7F5209, textos de ayuda a 14 (quedan en 12 solo etiquetas de rejillas: muestras de color, emblemas, leyenda y gráficas). Título del splash en Lora (`marca_titulo.xml`, generado con hb-shape + fontTools).
+- Probado en emulador: guardar copia (más de 10 s en el selector), contraseña incorrecta, recuperar, letra del sistema al 200 % y horizontal.
+
 ## Rediseño "Cuaderno de campo" (2026-11-26, rama `diseno/cuaderno-de-campo`)
 - Dos paletas en `Tema` (propiedades, no campos): papel (#F4EEDF, tinta #2E3A2C, ocre #8A5A0B, hoja #3F6A2A) y noche (la de siempre). `Fondo.Oscuro` elige la que necesite menos velo; `App.CambiarPaleta` rehace las pantallas al cambiar de paleta (leen los colores al crearse). `Pantalla.Aplicar` pinta la ventana detrás de la barra de estado y elige íconos claros u oscuros.
 - El árbol y la escena NO cambian: usan `Naturaleza` (los colores originales).

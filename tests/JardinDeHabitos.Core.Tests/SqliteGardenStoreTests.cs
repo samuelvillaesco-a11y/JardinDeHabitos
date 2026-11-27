@@ -236,6 +236,50 @@ public sealed class SqliteGardenStoreTests : IDisposable
     }
 
     [Fact]
+    public void LlaveComoTexto_DeAntesDeV13_PasaALlaveDirecta_SinPerderDatos()
+    {
+        // Hasta la v1.2 la llave se daba como contraseña y SQLCipher la derivaba en cada apertura.
+        var llave = SqliteGardenStore.NuevaLlave();
+        using (var store = new SqliteGardenStore(_ruta)) store.Guardar(Registro());
+        CifrarComoTexto(llave);
+
+        using (var store = new SqliteGardenStore(_ruta, llave: llave))
+            Assert.Equal("Naranjo", Assert.Single(store.Cargar()).Habito.EspecieDeArbol);
+
+        // Ahora abre con la llave directa (32 bytes) y ya no con la contraseña.
+        using (var directa = new SQLite.SQLiteConnection(new SQLite.SQLiteConnectionString(_ruta, true, key: Convert.FromHexString(llave))))
+            Assert.Equal(1, directa.ExecuteScalar<int>("SELECT count(*) FROM Habitos"));
+        Assert.ThrowsAny<Exception>(() =>
+        {
+            using var texto = new SQLite.SQLiteConnection(new SQLite.SQLiteConnectionString(_ruta, true, key: llave));
+            texto.ExecuteScalar<int>("SELECT count(*) FROM sqlite_master");
+        });
+    }
+
+    [Fact]
+    public void BaseNueva_UsaLlaveDirecta()
+    {
+        var llave = SqliteGardenStore.NuevaLlave();
+        using (var store = new SqliteGardenStore(_ruta, llave: llave)) store.Guardar(Registro());
+        using var directa = new SQLite.SQLiteConnection(new SQLite.SQLiteConnectionString(_ruta, true, key: Convert.FromHexString(llave)));
+        Assert.Equal(1, directa.ExecuteScalar<int>("SELECT count(*) FROM Habitos"));
+    }
+
+    private void CifrarComoTexto(string llave)
+    {
+        string temporal = _ruta + ".texto";
+        using (var claro = new SQLite.SQLiteConnection(_ruta))
+        {
+            int version = claro.ExecuteScalar<int>("PRAGMA user_version");
+            claro.Execute($"ATTACH DATABASE '{temporal}' AS cifrada KEY '{llave}'");
+            claro.ExecuteScalar<string>("SELECT sqlcipher_export('cifrada')");
+            claro.Execute($"PRAGMA cifrada.user_version = {version}");
+            claro.Execute("DETACH DATABASE cifrada");
+        }
+        File.Move(temporal, _ruta, overwrite: true);
+    }
+
+    [Fact]
     public void LlaveInvalida_Lanza() =>
         Assert.Throws<ArgumentException>(() => new SqliteGardenStore(_ruta, llave: "x' ; DROP TABLE Habitos; --"));
 

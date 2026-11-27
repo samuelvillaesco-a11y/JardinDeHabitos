@@ -24,9 +24,7 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
             if (!EsLlaveValida(llave)) throw new ArgumentException("La llave debe ser hexadecimal (32 a 128 caracteres).", nameof(llave));
             if (EstaEnClaro(rutaArchivo)) CifrarEnSuLugar(rutaArchivo, llave);
         }
-        _db = llave is null
-            ? new SQLiteConnection(rutaArchivo)
-            : new SQLiteConnection(new SQLiteConnectionString(rutaArchivo, true, key: llave));
+        _db = llave is null ? new SQLiteConnection(rutaArchivo) : AbrirCifrada(rutaArchivo, llave);
         try
         {
             Migrar();
@@ -60,6 +58,54 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         }
     }
 
+    /// <summary>
+    /// La llave ya es azar de 32 bytes: se da directa (x'…') y SQLCipher no la deriva en cada apertura
+    /// (eso costaba casi un segundo en teléfonos lentos, también en cada notificación).
+    /// </summary>
+    internal static string ClaveDirecta(string llave) => llave.Length == 64 ? $"x'{llave}'" : llave;
+
+    private static SQLiteConnection AbrirCifrada(string ruta, string llave)
+    {
+        var db = new SQLiteConnection(new SQLiteConnectionString(ruta, true, key: ClaveDirecta(llave)));
+        try
+        {
+            db.ExecuteScalar<int>("SELECT count(*) FROM sqlite_master");
+            return db;
+        }
+        catch (SQLiteException e) when (e.Result == SQLite3.Result.NonDBFile && ClaveDirecta(llave) != llave)
+        {
+            db.Dispose();
+        }
+        // Bases de hasta la v1.2: la llave se dio como contraseña. Se abre así una vez y se pasa a directa.
+        var vieja = new SQLiteConnection(new SQLiteConnectionString(ruta, true, key: llave));
+        try
+        {
+            vieja.ExecuteScalar<int>("SELECT count(*) FROM sqlite_master");
+            vieja.ExecuteScalar<string>($"PRAGMA rekey = \"{ClaveDirecta(llave)}\"");
+            return vieja;
+        }
+        catch
+        {
+            vieja.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Copia toda la base a <paramref name="destino"/>, cifrada con <paramref name="contrasena"/>
+    /// (SQLCipher deriva la llave con PBKDF2-SHA512). Úsalo a través de <see cref="Respaldo"/>.
+    /// </summary>
+    internal void ExportarA(string destino, string contrasena)
+    {
+        _db.Execute("ATTACH DATABASE ? AS respaldo KEY ?", destino, contrasena);
+        try
+        {
+            _db.ExecuteScalar<string>("SELECT sqlcipher_export('respaldo')");
+            _db.Execute($"PRAGMA respaldo.user_version = {VersionEsquema}");
+        }
+        finally { _db.Execute("DETACH DATABASE respaldo"); }
+    }
+
     public int VersionEsquema => _db.ExecuteScalar<int>("PRAGMA user_version");
 
     /// <summary>Una llave nueva: 32 bytes de azar criptográfico en hexadecimal.</summary>
@@ -85,8 +131,7 @@ public sealed class SqliteGardenStore : IGardenStore, IDisposable
         using (var claro = new SQLiteConnection(ruta))
         {
             int version = claro.ExecuteScalar<int>("PRAGMA user_version");
-            // La llave es solo hexadecimal (validada arriba); la ruta se escapa.
-            claro.Execute($"ATTACH DATABASE '{temporal.Replace("'", "''")}' AS cifrada KEY '{llave}'");
+            claro.Execute("ATTACH DATABASE ? AS cifrada KEY ?", temporal, ClaveDirecta(llave));
             claro.ExecuteScalar<string>("SELECT sqlcipher_export('cifrada')");
             claro.Execute($"PRAGMA cifrada.user_version = {version}");
             claro.Execute("DETACH DATABASE cifrada");

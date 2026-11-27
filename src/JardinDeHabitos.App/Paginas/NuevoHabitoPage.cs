@@ -93,7 +93,7 @@ public sealed class NuevoHabitoPage : ContentPage
         _filaPrevio.Add(_previoCantidad, 0);
         _filaPrevio.Add(_previoUnidad, 1);
         _previoCantidad.VerticalOptions = LayoutOptions.Start;
-        var notaPrevio = Tema.Texto("Tu árbol nacerá con esa edad.", 13, color: Tema.HuesoTenue);
+        var notaPrevio = Tema.Texto("Tu árbol nacerá con esa edad.", 14, color: Tema.HuesoTenue);
         _tipo.Cambio += ActualizarTipo;
         _tienePrevio.Cambio += () => _filaPrevio.IsVisible = notaPrevio.IsVisible = _tienePrevio.Elegido;
         _filaPrevio.IsVisible = notaPrevio.IsVisible = false;
@@ -113,7 +113,7 @@ public sealed class NuevoHabitoPage : ContentPage
                 notaPrevio,
                 Tema.Texto("¿Tienes acompañamiento?", 15),
                 _apoyo,
-                Tema.Texto("Si eliges alguno, podrás registrar cada vez que vayas.", 13, color: Tema.HuesoTenue),
+                Tema.Texto("Si eliges alguno, podrás registrar cada vez que vayas.", 14, color: Tema.HuesoTenue),
             },
         };
 

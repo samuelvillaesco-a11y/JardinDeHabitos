@@ -149,7 +149,7 @@ public sealed class Escala : VerticalStackLayout
             _puntos.Add((punto, texto));
             fila.Children.Add(punto);
         }
-        _lectura = Tema.Texto("", 13, color: Tema.HuesoTenue);
+        _lectura = Tema.Texto("", 14, color: Tema.HuesoTenue);
         Children.Add(fila);
         Children.Add(_lectura);
         Pintar();

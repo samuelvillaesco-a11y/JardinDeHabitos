@@ -401,7 +401,7 @@ public sealed class LogrosPage : ContentPage, IPrivada, IConLlave
         if (def.Nota is { } nota)
             _panelContenido.Add(Tema.Texto(nota, 14, color: Tema.HuesoTenue));
         if (e.Fecha is { } f)
-            _panelContenido.Add(Tema.Texto($"Conseguido el {Tema.FechaCorta(f)}.", 13, color: Tema.HuesoTenue));
+            _panelContenido.Add(Tema.Texto($"Conseguido el {Tema.FechaCorta(f)}.", 14, color: Tema.HuesoTenue));
 
         var cerrar = Tema.Boton("Volver al estante", Tema.Hoja);
         cerrar.Margin = new Thickness(0, 10, 0, 0);

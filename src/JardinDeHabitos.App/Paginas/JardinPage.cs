@@ -172,7 +172,7 @@ public sealed class JardinPage : ContentPage, IRefrescable
         pie.Add(new VerticalStackLayout
         {
             Spacing = 0,
-            Children = { Tema.Texto(v.Especie, 16, Tema.FuenteNegrita), Tema.Texto(estado, 13, color: Tema.HuesoTenue) },
+            Children = { Tema.Texto(v.Especie, 16, Tema.FuenteNegrita), Tema.Texto(estado, 14, color: Tema.HuesoTenue) },
         });
         if (v.PideCheckInHoy)
         {
@@ -197,11 +197,15 @@ public sealed class JardinPage : ContentPage, IRefrescable
             {
                 Tema.Texto("+", 40, Tema.FuenteTitulo, Tema.Hoja),
                 Tema.Texto(primera ? "Planta tu primer árbol" : "Plantar otro árbol", 15, Tema.FuenteNegrita),
-                Tema.Texto("Un árbol por cada hábito que quieras dejar. Solo tú sabrás cuál es cuál.", 13, color: Tema.HuesoTenue),
+                Tema.Texto("Un árbol por cada hábito que quieras dejar. Solo tú sabrás cuál es cuál.", 14, color: Tema.HuesoTenue),
             },
         };
-        var parcela = Tema.Parcela(contenido, Colors.Transparent, Tema.MusgoClaro);
+        // Un hueco en la página del cuaderno: borde punteado con contraste suficiente (≥ 3:1) para verse como botón.
+        var parcela = Tema.Parcela(contenido, Colors.Transparent, Tema.HuesoTenue);
+        parcela.StrokeThickness = 1.5;
+        parcela.StrokeDashArray = [4, 3];
         parcela.MinimumHeightRequest = 190;
+        SemanticProperties.SetDescription(parcela, primera ? "Planta tu primer árbol" : "Plantar otro árbol");
         var toque = new TapGestureRecognizer();
         toque.Tapped += async (_, _) => await this.UnaVez(() => new NuevoHabitoPage());
         parcela.GestureRecognizers.Add(toque);

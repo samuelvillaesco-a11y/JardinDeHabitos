@@ -65,6 +65,15 @@ public sealed class SeguridadPage : ContentPage, IPrivada, IConLlave
                 : "Solo con un PIN o patrón propio.",
             habilitado: propio));
 
+        _pila.Add(Tema.Texto("Copia de tu jardín", 19, Tema.FuenteTitulo, Tema.Hoja));
+        _pila.Add(Tema.Texto("Guarda todo tu jardín en un archivo cifrado con una contraseña que tú eliges, para pasarlo a otro teléfono. Sin la contraseña nadie puede abrirlo.", 15, color: Tema.HuesoTenue));
+        var guardar = Tema.Boton("Guardar una copia", Tema.MusgoClaro, Tema.Hueso);
+        guardar.Clicked += async (_, _) => await GuardarCopia();
+        var recuperar = Tema.Boton("Recuperar desde una copia", Tema.MusgoClaro, Tema.Hueso);
+        recuperar.Clicked += async (_, _) => await RecuperarCopia();
+        _pila.Add(guardar);
+        _pila.Add(recuperar);
+
         _pila.Add(Tema.Parcela(new VerticalStackLayout
         {
             Spacing = 6,
@@ -74,7 +83,8 @@ public sealed class SeguridadPage : ContentPage, IPrivada, IConLlave
                 Tema.Texto("• Todo se guarda solo en este teléfono. La app no tiene permiso de internet.", 14),
                 Tema.Texto("• No hay cuentas, correo ni inicio de sesión de ninguna empresa.", 14),
                 Tema.Texto("• Los respaldos en la nube y el paso a otro teléfono están desactivados para esta app.", 14),
-                Tema.Texto("• Si borras la app, se borra todo.", 14),
+                Tema.Texto("• Si borras la app, se borra todo, salvo las copias cifradas que tú guardes.", 14),
+                Tema.Texto("• Si pones el widget de jardinero, su nombre y número se guardan aparte sin cifrar para poder mostrarse. Al quitar el widget se borran.", 14),
             },
         }));
     }
@@ -129,6 +139,72 @@ public sealed class SeguridadPage : ContentPage, IPrivada, IConLlave
             await Pintar();
         }
         finally { _ocupado = false; }
+    }
+
+    private async Task GuardarCopia()
+    {
+        if (_ocupado) return;
+        _ocupado = true;
+        string temporal = Path.Combine(FileSystem.CacheDirectory, "copia.jardin");
+        try
+        {
+            if (!await Seguridad.VerificarAsync(this, "Guardar una copia del jardín")) return;
+            if (await ContrasenaCopiaPage.PedirAsync(Navigation, nueva: true) is not { } contrasena) return;
+            if (await Archivos.ElegirDondeGuardarAsync($"jardin-{DateTime.Now:yyyy-MM-dd}.jardin") is not { } destino) return;
+            await Task.Run(() => Servicios.ExportarCopia(temporal, contrasena));
+            await Archivos.CopiarAAsync(temporal, destino);
+            await DisplayAlertAsync("Copia guardada",
+                "Para pasarla a otro teléfono, instala la app ahí y entra a Seguridad › Recuperar desde una copia. Necesitarás la contraseña.", "Entendido");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("No se pudo guardar la copia", ex.Message, "Entendido");
+        }
+        finally
+        {
+            File.Delete(temporal);
+            _ocupado = false;
+        }
+    }
+
+    private async Task RecuperarCopia()
+    {
+        if (_ocupado) return;
+        _ocupado = true;
+        string temporal = Path.Combine(FileSystem.CacheDirectory, "abrir.jardin");
+        try
+        {
+            if (!await Seguridad.VerificarAsync(this, "Recuperar desde una copia")) return;
+            if (!await DisplayAlertAsync("¿Cambiar tu jardín por el de la copia?",
+                    "Tu jardín de ahora se guarda aparte en el teléfono (no se borra), pero dejarás de verlo.", "Elegir copia", "Cancelar"))
+                return;
+            if (await Archivos.ElegirArchivoAsync() is not { } origen) return;
+            await Archivos.CopiarDeAsync(origen, temporal);
+            while (true)
+            {
+                if (await ContrasenaCopiaPage.PedirAsync(Navigation, nueva: false) is not { } contrasena) return;
+                try
+                {
+                    await Task.Run(() => Servicios.ImportarCopia(temporal, contrasena));
+                    break;
+                }
+                catch (ContrasenaIncorrectaException ex)
+                {
+                    if (!await DisplayAlertAsync("No se pudo abrir", ex.Message, "Intentar otra vez", "Cancelar")) return;
+                }
+            }
+            await DisplayAlertAsync("Jardín recuperado", "Tu jardín ya es el de la copia.", "Ver mi jardín");
+            App.Reconstruir();
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("No se pudo recuperar la copia", ex.Message, "Entendido");
+        }
+        finally
+        {
+            File.Delete(temporal);
+            _ocupado = false;
+        }
     }
 
     private async Task CambiarCandado()

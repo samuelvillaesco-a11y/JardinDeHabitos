@@ -35,6 +35,7 @@ public static class Telefono
         if (actividad is null) return Task.FromResult<(string, string)?>(null);
         _eleccion?.TrySetResult(null);
         _eleccion = new();
+        App.SalidaAlSelector();
         try
         {
             actividad.StartActivityForResult(new Intent(Intent.ActionPick, ContactsContract.CommonDataKinds.Phone.ContentUri), CodigoContacto);

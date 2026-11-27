@@ -55,6 +55,23 @@ public class App : Application
         await ajustes.PushAsync(new PersonalizacionPage(), animated: false);
     }
 
+    /// <summary>Tras cambiar la base (importar una copia): pantallas nuevas, empezando en el jardín.</summary>
+    public static void Reconstruir()
+    {
+        if (Current?.Windows.FirstOrDefault() is not { } ventana) return;
+        ventana.Page = Jardin();
+        Pantalla.Actualizar();
+    }
+
+    private static DateTime? _selector;
+
+    /// <summary>
+    /// Se va a abrir un selector del sistema (contactos, archivos) desde una sección con llave: elegir
+    /// carpeta toma más que la gracia, y no debe cerrar la sección ni cortar lo que se está guardando.
+    /// </summary>
+    public static void SalidaAlSelector() => _selector = DateTime.UtcNow;
+    private static readonly TimeSpan GraciaSelector = TimeSpan.FromMinutes(3);
+
     private static NavigationPage Pestana(Page raiz, string titulo, string icono) =>
         new(raiz)
         {
@@ -96,7 +113,9 @@ public class App : Application
         if (Windows.FirstOrDefault() is not { } ventana) return;
 
         // Si mientras estaba fuera el usuario se verificó con el bloqueo del teléfono, no fue una salida.
-        bool larga = salio is { } t && DateTime.UtcNow - t > Gracia && !(Bloqueo.UltimoExito > t);
+        bool enSelector = _selector is { } s && DateTime.UtcNow - s < GraciaSelector;
+        _selector = null;
+        bool larga = salio is { } t && DateTime.UtcNow - t > Gracia && !(Bloqueo.UltimoExito > t) && !enSelector;
         if (larga && Seguridad.BienvenidaHecha)
             await CerrarSeccionesConLlave(ventana);
 

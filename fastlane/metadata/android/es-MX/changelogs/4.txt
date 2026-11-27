@@ -1,0 +1,4 @@
+Nuevo aspecto "cuaderno de campo": papel, títulos con serifa e íconos de línea. Si eliges un fondo oscuro, la app cambia a tonos de noche para que todo se lea.
+Copia cifrada: guarda tu jardín en un archivo con contraseña (Ajustes › Seguridad) y recupéralo en otro teléfono.
+Más seguro: si Android pierde la llave de tus datos, la app ya no se cierra; un candado ilegible ya no deja entrar; los intentos de PIN cuentan uno por uno.
+La app abre más rápido y los textos pequeños se leen mejor.

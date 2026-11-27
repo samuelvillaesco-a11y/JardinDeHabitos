@@ -191,7 +191,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
     {
         var dibujo = new GraficaLinea(color, min, max, etiquetas) { Puntos = puntos };
         var vista = new GraphicsView { Drawable = dibujo, HeightRequest = 170 };
-        var lectura = Tema.Texto("Toca la gráfica para ver un día.", 13, color: Tema.HuesoTenue);
+        var lectura = Tema.Texto("Toca la gráfica para ver un día.", 14, color: Tema.HuesoTenue);
         var toque = new TapGestureRecognizer();
         toque.Tapped += (_, e) =>
         {
@@ -209,7 +209,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
         return Tema.Parcela(new VerticalStackLayout
         {
             Spacing = 6,
-            Children = { Tema.Texto(titulo, 18, Tema.FuenteTitulo, Tema.Hoja), Tema.Texto(ayuda, 13, color: Tema.HuesoTenue), vista, lectura },
+            Children = { Tema.Texto(titulo, 18, Tema.FuenteTitulo, Tema.Hoja), Tema.Texto(ayuda, 14, color: Tema.HuesoTenue), vista, lectura },
         });
     }
 
@@ -226,7 +226,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
             13, color: Tema.HuesoTenue));
         var dibujo = new MapaSintomas { Filas = r.Mapa, Columnas = r.Columnas };
         var vista = new GraphicsView { Drawable = dibujo, HeightRequest = MapaSintomas.AltoPara(r.Mapa.Count) };
-        var lectura = Tema.Texto("Toca un cuadro para leerlo.", 13, color: Tema.HuesoTenue);
+        var lectura = Tema.Texto("Toca un cuadro para leerlo.", 14, color: Tema.HuesoTenue);
         var toque = new TapGestureRecognizer();
         toque.Tapped += (_, e) =>
         {
@@ -324,7 +324,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
             caja.Add(new BoxView { HeightRequest = 1, Color = ColoresGrafica.Rejilla });
         }
         if (entradas.Count > EntradasVisibles)
-            caja.Add(Tema.Texto($"Y {entradas.Count - EntradasVisibles} entradas más antiguas.", 13, color: Tema.HuesoTenue));
+            caja.Add(Tema.Texto($"Y {entradas.Count - EntradasVisibles} entradas más antiguas.", 14, color: Tema.HuesoTenue));
         return Tema.Parcela(caja);
     }
 
@@ -350,7 +350,7 @@ public sealed class BlogPage : ContentPage, IPrivada, IConLlave
         foreach (var h in plantados.OrderBy(h => h))
             if (CatalogoDiario.Fundamento(h) is { } f)
                 caja.Add(Tema.Texto("• " + f, 14));
-        caja.Add(Tema.Texto("Este registro no es un diagnóstico ni sustituye a un profesional de salud.", 12, color: Tema.HuesoTenue));
+        caja.Add(Tema.Texto("Este registro no es un diagnóstico ni sustituye a un profesional de salud.", 14, color: Tema.HuesoTenue));
         return Tema.Parcela(caja);
     }
 

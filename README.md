@@ -41,13 +41,15 @@ Dejar un hábito (alcohol, cigarro, apuestas, pornografía, azúcar, pantallas�
 - **Blog botánico (bajo llave):** tu diario y un registro de un minuto al día: ánimo, ganas, emociones, qué las detonó y síntomas. Gráficas de cómo vas (ánimo, ganas, mapa de síntomas) y lo que más se repite. Los síntomas salen de escalas clínicas (Minnesota, CIWA-Ar, COWS) según tus árboles, y las señales de alarma te llevan directo a la Línea de la Vida o al 911.
 - **Candado a tu gusto:** el mismo bloqueo del teléfono, un PIN propio o un patrón propio, para el estante de logros, el blog o toda la app.
 - **Pedir ayuda sin candado:** botón de 911, tus "jardineros" (personas de confianza) y la Línea de la Vida. Widget de pantalla de inicio para llamar a tu jardinero con un toque.
+- **Copia cifrada de tu jardín** para pasarlo a otro teléfono, con una contraseña que tú eliges.
 - **Música tranquila de bosque** (se apaga en Ajustes) y **fondos personalizables** en tonos calmantes.
 
 ## Privacidad
 
 - **Nada sale de tu teléfono.** La app **no tiene permiso de internet**. No hay cuentas, servidores, analíticas, anuncios ni rastreadores.
 - **Todo se guarda cifrado** (SQLCipher) con una llave aleatoria que vive en el almacenamiento seguro de Android.
-- **Sin copias en la nube:** los respaldos automáticos están desactivados. Si desinstalas la app, se borra todo.
+- **Sin copias en la nube:** los respaldos automáticos están desactivados. Si desinstalas la app, se borra todo, salvo las copias que tú guardes.
+- **Copia para cambiar de teléfono:** en Seguridad puedes guardar tu jardín en un archivo cifrado con una contraseña que solo tú sabes (SQLCipher, PBKDF2-SHA512). La contraseña no se guarda en ningún lado: sin ella nadie abre el archivo, ni tú.
 - **Tu PIN o patrón nunca se guarda**, solo una huella cifrada (PBKDF2-SHA256 con sal). Tras 20 intentos fallidos solo vale tu código de recuperación.
 - Permisos que pide: notificaciones, reprogramar avisos al encender y biometría. Nada más.
 

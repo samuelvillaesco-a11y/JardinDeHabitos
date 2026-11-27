@@ -35,6 +35,33 @@ public static class Servicios
         return true;
     }
 
+    /// <summary>Guarda una copia de todo el jardín en <paramref name="destino"/>, cifrada con la contraseña.</summary>
+    public static void ExportarCopia(string destino, string contrasena)
+    {
+        _ = Jardin; // abre la base si aún no
+        Respaldo.Exportar(_store!, destino, contrasena);
+    }
+
+    /// <summary>
+    /// Cambia el jardín por el de la copia. La base actual se aparta sin borrar (devuelve adónde).
+    /// Lanza <see cref="ContrasenaIncorrectaException"/> sin tocar nada si la contraseña no abre.
+    /// </summary>
+    public static string? ImportarCopia(string archivo, string contrasena)
+    {
+        string ruta = Path.Combine(FileSystem.AppDataDirectory, Configuracion().Archivo);
+        string preparada = Respaldo.Preparar(archivo, contrasena, ruta, LlaveDeDatos());
+        // shortcut: sin candado entre hilos; un aviso de las 9:00/20:00 que justo lea durante el cambio
+        // falla y lo atrapa Notificaciones (sin pérdida de datos). Si crece el uso en segundo plano, poner un lock.
+        _store?.Dispose();
+        _store = null;
+        _jardin = null;
+        var anterior = Respaldo.Instalar(preparada, ruta);
+#if ANDROID
+        JardineroWidget.Sincronizar(Jardin.Jardineros().FirstOrDefault());
+#endif
+        return anterior;
+    }
+
     private const string ClaveLlave = "datos.llave";
 
     /// <summary>

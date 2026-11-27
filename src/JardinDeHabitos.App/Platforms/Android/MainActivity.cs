@@ -28,5 +28,6 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnActivityResult(requestCode, resultCode, data);
         Telefono.AlVolver(requestCode, resultCode, data);
+        Archivos.AlVolver(requestCode, resultCode, data);
     }
 }
