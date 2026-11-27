@@ -1,6 +1,7 @@
 using Android.App;
 using Android.Content;
 using JardinDeHabitos.Core;
+using Dibujo_ = JardinDeHabitos.App.Dibujo;
 
 namespace JardinDeHabitos.App;
 
@@ -36,7 +37,7 @@ public static class Notificaciones
         alarmas.SetInexactRepeating(AlarmType.RtcWakeup, msEpoch, AlarmManager.IntervalDay, pendiente);
     }
 
-    public static void Mostrar(Context context, string titulo, string texto)
+    public static void Mostrar(Context context, string titulo, string texto, Android.Graphics.Bitmap? imagen = null)
     {
         CrearCanal(context);
         if (context.GetSystemService(Context.NotificationService) is not NotificationManager nm) return;
@@ -48,7 +49,9 @@ public static class Notificaciones
             .SetSmallIcon(Resource.Mipmap.appicon)
             .SetContentTitle(titulo)
             .SetContentText(texto)
-            .SetStyle(new Notification.BigTextStyle().BigText(texto))
+            .SetStyle(imagen is null
+                ? new Notification.BigTextStyle().BigText(texto)
+                : new Notification.BigPictureStyle().BigPicture(imagen).SetSummaryText(texto))
             .SetAutoCancel(true)
             .SetContentIntent(alTocar)
             .Build();
@@ -72,6 +75,7 @@ public static class Notificaciones
         // El receptor corre en el hilo principal del mismo proceso: usa el mismo jardín que la app
         // (una sola conexión, misma llave, mismo reloj) en vez de abrir otra copia de la base.
         var mensajes = new List<(string Titulo, string Texto)>();
+        var conImagen = new List<(string Titulo, string Texto, VistaArbol Arbol, GrowthStage Etapa)>();
         {
             var jardin = Servicios.Jardin;
             var arboles = jardin.Jardin();
@@ -80,6 +84,10 @@ public static class Notificaciones
 
             if (momento == Manana)
             {
+                // Anticipa lo bonito: si el check-in de hoy lo hace florecer o dar fruto, se avisa con el dibujo.
+                foreach (var v in arboles)
+                    if (v.EtapaConCheckInDeHoy is { } nueva && nueva >= GrowthStage.Flor)
+                        conImagen.Add((TituloAnticipo(nueva, Min(v.Especie)), "Haz tu check-in de hoy y míralo pasar.", v, nueva));
                 foreach (var v in arboles.Where(v => v.EsCheatDayHoy))
                     mensajes.Add(($"☀️ Hoy tu {Min(v.Especie)} descansa", "Disfruta tu día libre con medida: un día libre no es un día sin freno."));
             }
@@ -93,6 +101,35 @@ public static class Notificaciones
 
         var context = Android.App.Application.Context;
         foreach (var (titulo, texto) in mensajes) Mostrar(context, titulo, texto);
+        foreach (var (titulo, texto, arbol, etapa) in conImagen) Mostrar(context, titulo, texto, Dibujo(arbol, etapa));
+    }
+
+    private static string TituloAnticipo(GrowthStage etapa, string e) => etapa switch
+    {
+        GrowthStage.Flor => $"🌸 Hoy puede florecer tu {e}",
+        GrowthStage.FrutaInmadura => $"🍏 Hoy tu {e} puede dar sus primeros frutos",
+        GrowthStage.FrutaComestible => $"🍎 Hoy maduran los frutos de tu {e}",
+        _ => $"✨ Hoy tu {e} puede dar una fruta legendaria",
+    };
+
+    /// <summary>El árbol ya en su etapa nueva, para la imagen grande del aviso. Null si no se pudo dibujar.</summary>
+    private static Android.Graphics.Bitmap? Dibujo(VistaArbol v, GrowthStage etapa)
+    {
+        try
+        {
+            var estado = Dibujo_.EstadoArbol.De(v);
+            estado.Etapa = etapa;
+            var ctx = new Microsoft.Maui.Graphics.Platform.PlatformBitmapExportContext(720, 360, 1f, disposeBitmap: false);
+            ctx.Canvas.FillColor = Color.FromArgb("#F4EEDF");
+            ctx.Canvas.FillRectangle(0, 0, 720, 360);
+            new Dibujo_.ArbolPequeno(estado).Draw(ctx.Canvas, new RectF(180, 20, 360, 330));
+            return ctx.Bitmap;
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Warn("JardinDeHabitos", $"No se pudo dibujar el aviso: {ex.Message}");
+            return null;
+        }
     }
 
     private static readonly (string, string)[] Recordatorios =

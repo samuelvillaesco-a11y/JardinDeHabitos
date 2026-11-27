@@ -23,6 +23,10 @@ public sealed class ArbolPage : ContentPage, IRefrescable
     private readonly Label _ayuda = Tema.Texto("", 16, Tema.FuenteNegrita, Tema.Miel);
     private readonly Button _cancelar = Tema.Boton("Dejarlo para después", Tema.MusgoClaro, Tema.Hueso);
 
+    private readonly Label _animoCara = new() { FontSize = 22, VerticalTextAlignment = TextAlignment.Center };
+    private readonly Label _animoTexto = Tema.Texto("", 13, Tema.FuenteNegrita);
+    private readonly Border _animo;
+
     private readonly VerticalStackLayout _checkIn = new() { Spacing = 10 };
     private readonly VerticalStackLayout _cuidado = new() { Spacing = 10 };
     private readonly VerticalStackLayout _extras = new() { Spacing = 10 };
@@ -37,6 +41,25 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         _lienzo.DragInteraction += (_, e) => { _escena.Arrastrar(e.Touches[0]); Repintar(); };
         _lienzo.EndInteraction += (_, _) => { _escena.Soltar(); Repintar(); };
         _escena.Completado += JuegoCompletado;
+        _escena.Cosechado += Cosechado;
+        // Respeta "quitar animaciones" de Android: el árbol pasa directo a su estado final.
+        _escena.MovimientoReducido = !Android.Animation.ValueAnimator.AreAnimatorsEnabled();
+
+        // Ánimo del árbol: una calcomanía en la esquina (el árbol no tiene cara).
+        _animoTexto.VerticalTextAlignment = TextAlignment.Center;
+        _animo = new Border
+        {
+            Background = Tema.Musgo.WithAlpha(0.92f),
+            Stroke = Tema.Linea,
+            StrokeThickness = 1,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
+            Padding = new Thickness(8, 2, 10, 2),
+            HorizontalOptions = LayoutOptions.End,
+            VerticalOptions = LayoutOptions.Start,
+            Margin = new Thickness(0, 22, 28, 0),
+            InputTransparent = true,
+            Content = new HorizontalStackLayout { Spacing = 4, Children = { _animoCara, _animoTexto } },
+        };
 
         _cancelar.Clicked += (_, _) => { _escena.Cancelar(); Refrescar(); };
 
@@ -64,7 +87,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             },
         };
         var raiz = new Grid { RowDefinitions = [new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star)] };
-        raiz.Add(_lienzo, 0, 0);
+        raiz.Add(new Grid { Children = { _lienzo, _animo } }, 0, 0);
         raiz.Add(_scroll, 0, 1);
         Content = raiz;
     }
@@ -77,8 +100,8 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         _timer.Interval = Lento;
         _timer.Tick += (_, _) =>
         {
-            // 30 Hz solo durante un mini-juego; si no, un tic por segundo para ver si cambió el día.
-            bool jugando = _escena.Juego != MiniJuego.Ninguno;
+            // 30 Hz solo durante un mini-juego o una animación; si no, un tic por segundo para ver si cambió el día.
+            bool jugando = _escena.Juego != MiniJuego.Ninguno || _escena.Animando;
             if (jugando)
             {
                 _escena.Tick(0.033f);
@@ -88,7 +111,13 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             {
                 AlVolver();
             }
-            var intervalo = _escena.Juego != MiniJuego.Ninguno ? Rapido : Lento;
+            else if (DateTime.Now.Minute != _escena.Ahora.Minute)
+            {
+                // El sol y la luna avanzan con el reloj.
+                _escena.Ahora = DateTime.Now;
+                _lienzo.Invalidate();
+            }
+            var intervalo = _escena.Juego != MiniJuego.Ninguno || _escena.Animando ? Rapido : Lento;
             if (_timer.Interval != intervalo) _timer.Interval = intervalo;
         };
         _timer.Start();
@@ -134,11 +163,15 @@ public sealed class ArbolPage : ContentPage, IRefrescable
     private void Refrescar()
     {
         _vista = Servicios.Jardin.Arbol(_id);
+        if (_hoyMostrado != Servicios.Jardin.Hoy) _escena.ReiniciarCosecha();
         _hoyMostrado = Servicios.Jardin.Hoy;
         var v = _vista;
         Title = "";
         _escena.Arbol = EstadoArbol.De(v);
         _escena.Debuffs = Servicios.Jardin.Debuffs();
+        _escena.PuedeCosechar = v.Etapa >= GrowthStage.FrutaComestible && !v.EnCuidado
+            && Preferences.Default.Get(ClaveCosecha, 0) != _hoyMostrado.DayNumber;
+        PintarAnimo(v);
 
         bool jugando = _escena.Juego != MiniJuego.Ninguno;
         _ayuda.IsVisible = jugando;
@@ -330,8 +363,45 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         finally { _checkInEnCurso = false; }
     }
 
+    private string ClaveCosecha => $"cosecha.{_id}";
+
+    private async void Cosechado(int frutos)
+    {
+        Preferences.Default.Set(ClaveCosecha, _hoyMostrado.DayNumber);
+        await DisplayAlertAsync("Cosecha del día", $"Cortaste {frutos} frutos. Mañana habrá más.", "¡Qué rico!");
+        Refrescar();
+    }
+
+    private void PintarAnimo(VistaArbol v)
+    {
+        var (cara, texto) = v switch
+        {
+            { MiniEvento: not MiniEvento.Ninguno } => ("😟", "Necesita ayuda"),
+            { Raices: true } => ("🤒", "Raíces dañadas"),
+            { Plaga: true } => ("🤒", "Con plaga"),
+            { EsCheatDayHoy: true } => ("😌", "Descansando"),
+            { PideCheckInHoy: true } => ("🙂", "Te espera"),
+            { Etapa: GrowthStage.FrutaLegendaria } => ("🤩", "Radiante"),
+            { RegadoHoy: false, Etapa: >= GrowthStage.Arbusto } => ("💧", "Con sed"),
+            _ => ("😊", "Contento"),
+        };
+        _animoCara.Text = cara;
+        _animoTexto.Text = texto;
+        SemanticProperties.SetDescription(_animo, $"Ánimo del árbol: {texto}");
+    }
+
+    /// <summary>Corre la animación y espera a que termine antes de seguir (diálogos, logros).</summary>
+    private async Task Animar(Efecto efecto, GrowthStage? antes = null)
+    {
+        if (_escena.MovimientoReducido) return;
+        _escena.Animar(efecto, antes);
+        if (_timer is not null) _timer.Interval = Rapido;
+        await Task.Delay(TimeSpan.FromSeconds(Escena.Duracion(efecto)));
+    }
+
     private async Task HacerCheckInUnaVez(CheckInResult resultado)
     {
+        var etapaAntes = _vista.Etapa;
         if (resultado == CheckInResult.Roto)
         {
             bool seguro = await DisplayAlertAsync("¿Lo rompiste hoy?",
@@ -349,6 +419,14 @@ public sealed class ArbolPage : ContentPage, IRefrescable
             await DisplayAlertAsync("No se pudo", ex.Message, "Entendido");
             Refrescar();
             return;
+        }
+
+        Refrescar();
+        if (!o.ArbolMurio)
+        {
+            if (resultado == CheckInResult.Roto) await Animar(Efecto.Grieta);
+            else if (_vista.Etapa != etapaAntes) await Animar(Efecto.Crecer, etapaAntes);
+            else await Animar(Efecto.Alivio);
         }
 
         if (o.ArbolMurio)
@@ -415,9 +493,8 @@ public sealed class ArbolPage : ContentPage, IRefrescable
                 }
             });
         }
+        if (juego == MiniJuego.Podar) await Animar(Efecto.Sacudida);
         await Avisos.AnunciarLogros(this);
-        await _lienzo.ScaleToAsync(1.03, 120);
-        await _lienzo.ScaleToAsync(1.0, 120);
     }
 
     private static string Instruccion(MiniJuego juego) => juego switch

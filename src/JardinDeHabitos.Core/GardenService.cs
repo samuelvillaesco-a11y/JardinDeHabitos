@@ -29,6 +29,13 @@ public sealed record VistaArbol(
     IReadOnlyList<DayOfWeek> DiasDeCheat)
 {
     public bool EnCuidado => Plaga || Raices;
+
+    /// <summary>
+    /// La etapa nueva a la que llega hoy si hace su check-in (crece un día), o null si hoy no cambia
+    /// de etapa o no puede crecer (ya hizo check-in, día libre o en cuidado).
+    /// </summary>
+    public GrowthStage? EtapaConCheckInDeHoy =>
+        PideCheckInHoy && !EnCuidado && GrowthStageCalculator.EtapaParaDias(Dias + 1) is var e && e != Etapa ? e : null;
 }
 
 public enum MiniJuegoTipo

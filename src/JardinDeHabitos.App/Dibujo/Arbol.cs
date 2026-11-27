@@ -36,6 +36,18 @@ public sealed class EstadoArbol
     public bool EnPaz { get; set; }
     public bool Regado { get; set; }
 
+    // Estado de animación (lo pone la escena; en el jardín y los avisos quedan en su valor final).
+    /// <summary>Qué tan mojada está la tierra, de 0 a 1 (al regar se moja poco a poco).</summary>
+    public float? Humedad { get; set; }
+    /// <summary>Cuánto se ha abierto la grieta más nueva, de 0 a 1.</summary>
+    public float GrietaNueva { get; set; } = 1;
+    /// <summary>Cuánto han subido los bichos desde el suelo, de 0 a 1.</summary>
+    public float LlegadaPlaga { get; set; } = 1;
+    /// <summary>Segundos corridos, para que los bichos se muevan un poco.</summary>
+    public float Reloj { get; set; }
+    /// <summary>Frutos ya cortados hoy (índices), que no se pintan en la copa.</summary>
+    public IReadOnlySet<int> Cosechados { get; set; } = new HashSet<int>();
+
     public static EstadoArbol De(VistaArbol v) => new()
     {
         Etapa = v.Etapa,
@@ -121,16 +133,20 @@ public static class Arbol
         return new GeometriaArbol(cx, suelo, s, rectCopa, grosor, troncoArriba);
     }
 
-    public static void Dibujar(ICanvas c, RectF r, EstadoArbol e, bool conCielo)
+    /// <summary>Solo la tierra (la escena la pinta aparte para que no se mueva con el árbol).</summary>
+    public static void Tierra(ICanvas c, RectF r, EstadoArbol e) =>
+        Monticulo(c, Geometria(r, e.Etapa), e.Humedad ?? (e.Regado ? 1 : 0));
+
+    public static void Dibujar(ICanvas c, RectF r, EstadoArbol e, bool conCielo, bool conTierra = true)
     {
         var g = Geometria(r, e.Etapa);
         float s = g.Escala;
 
-        if (conCielo) Cielo(c, r);
+        if (conCielo) Cielo(c, r, DateTime.Now);
         if (e.EnPaz) Paz(c, g);
         if (e.Etapa == GrowthStage.FrutaLegendaria) Resplandor(c, g);
 
-        Monticulo(c, g, e.Regado);
+        if (conTierra) Monticulo(c, g, e.Humedad ?? (e.Regado ? 1 : 0));
         if (e.RaicesPodridas) Raices(c, g);
 
         switch (e.Etapa)
@@ -157,18 +173,98 @@ public static class Arbol
 
         Adornar(c, g, e);
         Cicatrices(c, g, e);
-        if (e.Plaga) Plaga(c, g);
+        if (e.Plaga) Plaga(c, g, e);
     }
 
-    private static void Cielo(ICanvas c, RectF r)
+    // Cielo de día, de ocaso y de noche (arriba, abajo).
+    private static readonly (Color A, Color B) CieloDia = (CieloArriba, CieloAbajo);
+    private static readonly (Color A, Color B) CieloOcaso = (Color.FromArgb("#E88F6A"), Color.FromArgb("#6B5A4E"));
+    private static readonly (Color A, Color B) CieloNoche = (Color.FromArgb("#1F2A44"), Color.FromArgb("#3A4A3A"));
+    private const float Amanecer = 6.5f, Anochecer = 19.5f;
+
+    /// <summary>Cielo según la hora: el sol cruza de día, la luna (en su fase real) de noche.</summary>
+    public static void Cielo(ICanvas c, RectF r) => Cielo(c, r, DateTime.Now);
+
+    public static void Cielo(ICanvas c, RectF r, DateTime ahora)
     {
-        c.SetFillPaint(Degradado(CieloArriba, CieloAbajo), r);
+        float h = ahora.Hour + ahora.Minute / 60f;
+        float dia = (h - Amanecer) / (Anochecer - Amanecer);              // 0..1 mientras hay sol
+        float altura = dia is >= 0 and <= 1 ? MathF.Sin(MathF.PI * dia) : -0.4f;
+        // Mezcla: noche → ocaso (sol cerca del horizonte) → día.
+        float aOcaso = Math.Clamp((altura + 0.15f) / 0.3f, 0, 1);
+        float aDia = Math.Clamp((altura - 0.15f) / 0.35f, 0, 1);
+        Color Mezcla(Color n, Color o, Color d) => Lerp(Lerp(n, o, aOcaso), d, aDia);
+        var arriba = Mezcla(CieloNoche.A, CieloOcaso.A, CieloDia.A);
+        var abajo = Mezcla(CieloNoche.B, CieloOcaso.B, CieloDia.B);
+        c.SetFillPaint(Degradado(arriba, abajo), r);
         c.FillRoundedRectangle(r, 24);
-        // Sol bajo, plano.
-        c.Relleno(Color.FromArgb("#FBE3A0").WithAlpha(0.85f));
-        float sol = Math.Min(r.Width, r.Height) * 0.08f;
-        c.FillCircle(r.Right - sol * 2.4f, r.Top + sol * 2.2f, sol);
+
+        float horizonte = r.Top + r.Height * 0.78f;
+        float s = Math.Min(r.Width, r.Height);
+        float noche = 1 - aOcaso;
+        if (noche > 0)
+        {
+            c.Relleno(Colors.White.WithAlpha(0.8f * noche));
+            foreach (var (x, y, t) in Estrellas) c.FillCircle(r.Left + r.Width * x, r.Top + r.Height * y, t * s * 0.006f);
+        }
+
+        if (dia is >= -0.03f and <= 1.03f)
+        {
+            // Sol: de izquierda (este) a derecha (oeste) en arco; más cálido cerca del horizonte.
+            float x = r.Left + r.Width * (0.08f + 0.84f * Math.Clamp(dia, 0, 1));
+            float y = horizonte - MathF.Max(altura, -0.05f) * r.Height * 0.62f;
+            float radio = s * 0.075f;
+            var color = Lerp(Color.FromArgb("#F6B26B"), Color.FromArgb("#FBE3A0"), aDia);
+            c.Relleno(color.WithAlpha(0.25f));
+            c.FillCircle(x, y, radio * 1.6f);
+            c.Relleno(color.WithAlpha(0.9f));
+            c.FillCircle(x, y, radio);
+        }
+        else
+        {
+            // Luna: cruza la noche de 19:30 a 6:30.
+            float n = ((h - Anochecer + 24) % 24) / (24 - (Anochecer - Amanecer));
+            float x = r.Left + r.Width * (0.08f + 0.84f * n);
+            float y = horizonte - MathF.Sin(MathF.PI * n) * r.Height * 0.55f;
+            Luna(c, new PointF(x, y), s * 0.06f, FaseLunar(ahora), arriba);
+        }
     }
+
+    private static readonly (float X, float Y, float T)[] Estrellas =
+    [
+        (0.12f, 0.12f, 1.0f), (0.27f, 0.25f, 0.7f), (0.41f, 0.08f, 0.8f), (0.58f, 0.20f, 1.1f), (0.71f, 0.10f, 0.7f),
+        (0.86f, 0.28f, 0.9f), (0.20f, 0.40f, 0.6f), (0.50f, 0.34f, 0.6f), (0.92f, 0.07f, 0.8f), (0.35f, 0.47f, 0.5f),
+    ];
+
+    /// <summary>Edad de la luna de 0 a 1 (0 = nueva, 0.5 = llena), desde la luna nueva del 6-ene-2000.</summary>
+    public static float FaseLunar(DateTime ahora)
+    {
+        const double Sinodico = 29.530588853;
+        double dias = (ahora.ToUniversalTime() - new DateTime(2000, 1, 6, 18, 14, 0, DateTimeKind.Utc)).TotalDays;
+        double edad = dias % Sinodico;
+        if (edad < 0) edad += Sinodico;
+        return (float)(edad / Sinodico);
+    }
+
+    private static void Luna(ICanvas c, PointF centro, float radio, float fase, Color cielo)
+    {
+        c.Relleno(Color.FromArgb("#F4EEDF").WithAlpha(0.18f));
+        c.FillCircle(centro, radio * 1.7f);
+        c.Relleno(Color.FromArgb("#F4EEDF"));
+        c.FillCircle(centro, radio);
+        // Sombra: un disco del color del cielo que se corre según la fase (creciente: luz a la derecha).
+        float desplazamiento = fase <= 0.5f ? -4 * radio * fase : 4 * radio * (1 - fase);
+        var borde = new PathF();
+        borde.AppendCircle(centro.X, centro.Y, radio);
+        c.SaveState();
+        c.ClipPath(borde);
+        c.Relleno(cielo.WithAlpha(0.88f));
+        c.FillCircle(centro.X + desplazamiento, centro.Y, radio * 1.02f);
+        c.RestoreState();
+    }
+
+    private static Color Lerp(Color a, Color b, float t) =>
+        new(a.Red + (b.Red - a.Red) * t, a.Green + (b.Green - a.Green) * t, a.Blue + (b.Blue - a.Blue) * t, a.Alpha + (b.Alpha - a.Alpha) * t);
 
     private static void Paz(ICanvas c, GeometriaArbol g)
     {
@@ -192,17 +288,20 @@ public static class Arbol
         c.FillEllipse(area);
     }
 
-    private static void Monticulo(ICanvas c, GeometriaArbol g, bool regado)
+    private static void Monticulo(ICanvas c, GeometriaArbol g, float humedad)
     {
         float s = g.Escala;
         var m = new RectF(g.CentroX - s * 0.40f, g.Suelo - s * 0.06f, s * 0.80f, s * 0.18f);
         c.SetFillPaint(Degradado(Naturaleza.Tierra, Naturaleza.TierraOscura), m);
         c.FillEllipse(m);
-        if (regado)
-        {
-            c.Relleno(Color.FromArgb("#3A2618").WithAlpha(0.7f));
-            c.FillEllipse(g.CentroX - s * 0.18f, g.Suelo - s * 0.02f, s * 0.36f, s * 0.07f);
-        }
+        if (humedad <= 0) return;
+        // La mancha húmeda crece desde el tronco y se oscurece mientras se riega.
+        float h = Math.Clamp(humedad, 0, 1);
+        float ancho = s * (0.14f + 0.50f * h), alto = s * (0.04f + 0.08f * h);
+        c.Relleno(Color.FromArgb("#3A2618").WithAlpha(0.30f + 0.40f * h));
+        c.FillEllipse(g.CentroX - ancho / 2, g.Suelo - alto * 0.35f, ancho, alto);
+        c.Relleno(Colors.White.WithAlpha(0.10f * h));
+        c.FillEllipse(g.CentroX - ancho * 0.25f, g.Suelo - alto * 0.25f, ancho * 0.3f, alto * 0.3f);
     }
 
     private static void Raices(ICanvas c, GeometriaArbol g)
@@ -234,7 +333,7 @@ public static class Arbol
         HojaSuelta(c, g.CentroX, g.TroncoArriba + s * 0.05f, s * 0.07f, 3.6f);
     }
 
-    private static void HojaSuelta(ICanvas c, float x, float y, float largo, float angulo)
+    public static void HojaSuelta(ICanvas c, float x, float y, float largo, float angulo)
     {
         c.SaveState();
         c.Translate(x, y);
@@ -298,10 +397,10 @@ public static class Arbol
                 Frutas(c, z, FrutaVerde, r * 0.9f, 6);
                 break;
             case GrowthStage.FrutaComestible:
-                Frutas(c, z, Especies.ColorFruta(e.Especie), r * 1.2f, 7);
+                Frutas(c, z, Especies.ColorFruta(e.Especie), r * 1.2f, 7, e.Cosechados);
                 break;
             case GrowthStage.FrutaLegendaria:
-                Frutas(c, z, Oro, r * 1.35f, 8);
+                Frutas(c, z, Oro, r * 1.35f, 8, e.Cosechados);
                 c.Relleno(Colors.White.WithAlpha(0.9f));
                 foreach (var p in new[] { new PointF(0.1f, 0.1f), new PointF(0.95f, 0.2f), new PointF(0.05f, 0.85f) })
                     Destello(c, z.X + z.Width * p.X, z.Y + z.Height * p.Y, r * 1.2f);
@@ -309,10 +408,25 @@ public static class Arbol
         }
     }
 
-    private static void Frutas(ICanvas c, RectF z, Color color, float r, int cuantas)
+    /// <summary>Frutos maduros que se pueden cosechar: posición, radio y color (vacío si la etapa no tiene).</summary>
+    public static IReadOnlyList<(PointF Pos, float R, Color Color)> FrutosMaduros(GeometriaArbol g, EstadoArbol e)
     {
-        foreach (var p in Adornos.Take(cuantas))
+        var z = g.Copa;
+        float r = z.Width * 0.045f;
+        (int n, float radio, Color color) = e.Etapa switch
         {
+            GrowthStage.FrutaComestible => (7, r * 1.2f, Especies.ColorFruta(e.Especie)),
+            GrowthStage.FrutaLegendaria => (8, r * 1.35f, Oro),
+            _ => (0, 0f, Colors.Transparent),
+        };
+        return [.. Adornos.Take(n).Select(p => (new PointF(z.X + z.Width * p.X, z.Y + z.Height * p.Y), radio, color))];
+    }
+
+    private static void Frutas(ICanvas c, RectF z, Color color, float r, int cuantas, IReadOnlySet<int>? cosechados = null)
+    {
+        foreach (var (p, i) in Adornos.Take(cuantas).Select((p, i) => (p, i)))
+        {
+            if (cosechados?.Contains(i) == true) continue;
             var (x, y) = (z.X + z.Width * p.X, z.Y + z.Height * p.Y);
             c.Relleno(color);
             c.FillCircle(x, y, r);
@@ -332,42 +446,83 @@ public static class Arbol
         c.FillPath(p);
     }
 
-    /// <summary>Cicatrices: marcas claras en el tronco (o junto a la planta si aún es pequeña).</summary>
+    /// <summary>
+    /// Cicatrices: grietas oscuras en el tronco (o en la tierra si aún es pequeña). La más nueva se
+    /// abre según <see cref="EstadoArbol.GrietaNueva"/>.
+    /// </summary>
     private static void Cicatrices(ICanvas c, GeometriaArbol g, EstadoArbol e)
     {
         int n = Math.Min(e.Cicatrices, 8);
         if (n == 0) return;
         float s = g.Escala;
-        c.StrokeColor = Naturaleza.Hueso.WithAlpha(0.75f);
-        c.StrokeLineCap = LineCap.Round;
-
         bool hayTronco = e.Etapa >= GrowthStage.ArbolJoven;
-        if (hayTronco)
+        c.StrokeLineCap = LineCap.Round;
+        c.StrokeLineJoin = LineJoin.Round;
+        for (int i = 0; i < n; i++)
         {
-            c.StrokeSize = Math.Max(1.5f, g.TroncoAncho * 0.18f);
-            float alto = g.Suelo - g.TroncoArriba;
-            for (int i = 0; i < n; i++)
+            float avance = i == n - 1 ? Math.Clamp(e.GrietaNueva, 0, 1) : 1;
+            if (avance <= 0) continue;
+            PointF[] zigzag;
+            float grosor;
+            if (hayTronco)
             {
-                float y = g.Suelo - alto * (i + 1) / (n + 1);
-                c.DrawLine(g.CentroX - g.TroncoAncho * 0.35f, y + 2, g.CentroX + g.TroncoAncho * 0.35f, y - 2);
+                float alto = g.Suelo - g.TroncoArriba, w = g.TroncoAncho;
+                float y0 = g.Suelo - alto * (i + 0.6f) / (n + 0.5f);
+                float x0 = g.CentroX + (i % 2 == 0 ? -0.15f : 0.12f) * w;
+                zigzag = [new(x0, y0), new(x0 + w * 0.18f, y0 + alto * 0.06f), new(x0 - w * 0.10f, y0 + alto * 0.12f), new(x0 + w * 0.12f, y0 + alto * 0.19f)];
+                grosor = Math.Max(1.5f, w * 0.12f);
             }
-        }
-        else
-        {
-            c.StrokeSize = s * 0.008f;
-            for (int i = 0; i < n; i++)
+            else
             {
-                float x = g.CentroX - s * 0.30f + i * s * 0.03f;
-                c.DrawLine(x, g.Suelo + s * 0.07f, x + s * 0.012f, g.Suelo + s * 0.04f);
+                float x0 = g.CentroX + s * (-0.26f + i * 0.08f), y0 = g.Suelo + s * 0.005f;
+                zigzag = [new(x0, y0), new(x0 + s * 0.02f, y0 + s * 0.025f), new(x0 - s * 0.005f, y0 + s * 0.045f), new(x0 + s * 0.015f, y0 + s * 0.07f)];
+                grosor = s * 0.007f;
             }
+            var path = Parcial(zigzag, avance);
+            c.StrokeColor = Color.FromArgb("#2A1A10");
+            c.StrokeSize = grosor;
+            c.DrawPath(path);
+            // Borde claro: la madera viva bajo la corteza.
+            c.StrokeColor = Color.FromArgb("#C9A27A").WithAlpha(0.45f);
+            c.StrokeSize = grosor * 0.35f;
+            c.SaveState();
+            c.Translate(grosor * 0.6f, 0);
+            c.DrawPath(path);
+            c.RestoreState();
         }
     }
 
-    private static void Plaga(ICanvas c, GeometriaArbol g)
+    /// <summary>Línea quebrada recortada a una fracción de su largo.</summary>
+    private static PathF Parcial(PointF[] puntos, float avance)
+    {
+        var path = new PathF(puntos[0]);
+        int tramos = puntos.Length - 1;
+        float hasta = avance * tramos;
+        for (int i = 0; i < tramos; i++)
+        {
+            float f = Math.Clamp(hasta - i, 0, 1);
+            if (f <= 0) break;
+            var (a, b) = (puntos[i], puntos[i + 1]);
+            path.LineTo(a.X + (b.X - a.X) * f, a.Y + (b.Y - a.Y) * f);
+        }
+        return path;
+    }
+
+    private static void Plaga(ICanvas c, GeometriaArbol g, EstadoArbol e)
     {
         var z = g.Zona;
-        foreach (var p in PosicionesPlaga)
-            DibujarBicho(c, new PointF(z.X + z.Width * p.X, z.Y + z.Height * p.Y), g.Escala * 0.022f);
+        float llegada = Math.Clamp(e.LlegadaPlaga, 0, 1);
+        for (int i = 0; i < PosicionesPlaga.Length; i++)
+        {
+            var p = PosicionesPlaga[i];
+            var destino = new PointF(z.X + z.Width * p.X, z.Y + z.Height * p.Y);
+            // Suben desde la tierra uno tras otro y luego caminan un poquito en su lugar.
+            float f = Math.Clamp(llegada * 1.6f - i * 0.12f, 0, 1);
+            var origen = new PointF(g.CentroX + (destino.X - g.CentroX) * 0.3f, g.Suelo);
+            float x = origen.X + (destino.X - origen.X) * f + MathF.Sin(e.Reloj * 5 + i * 1.7f) * g.Escala * 0.005f;
+            float y = origen.Y + (destino.Y - origen.Y) * f + MathF.Cos(e.Reloj * 4 + i) * g.Escala * 0.003f;
+            if (f > 0) DibujarBicho(c, new PointF(x, y), g.Escala * 0.022f);
+        }
     }
 
     public static void DibujarBicho(ICanvas c, PointF p, float r)

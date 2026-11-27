@@ -11,11 +11,74 @@ public enum MiniJuego
     Raices,  // arrastrar raíces podridas fuera de la tierra
 }
 
+/// <summary>Animaciones cortas del árbol (todas se saltan con "reducir movimiento").</summary>
+public enum Efecto
+{
+    Ninguno,
+    Crecer,    // cambió de etapa: crece con rebote y suelta hojas, pétalos o destellos
+    Alivio,    // check-in cumplido: respira hondo dos veces
+    Grieta,    // check-in roto: se sacude, se abre una grieta y llegan los bichos
+    Sacudida,  // después de podar: se mece y caen hojas que luego desaparecen
+}
+
 /// <summary>
 /// El árbol grande con cielo y los mini-juegos de cuidado. Todo con gestos: tocar y arrastrar.
 /// </summary>
 public sealed class Escena : IDrawable
 {
+    private sealed class Particula
+    {
+        public PointF Pos;
+        public PointF Vel;
+        public float Giro;
+        public float Vida;          // segundos que le quedan
+        public float Total;
+        public Color Color = Colors.White;
+        public char Tipo;           // 'h' hoja, 'p' pétalo, 'd' destello, 'f' fruto hacia la canasta
+        public PointF Destino;
+        public bool EnSuelo;
+    }
+
+    private readonly List<Particula> _particulas = [];
+    private Efecto _efecto;
+    private float _tEfecto;
+    private GrowthStage _etapaAntes;
+    private float _reloj;
+    private readonly HashSet<int> _cosechados = [];
+    private int _enCanasta;
+
+    /// <summary>Con "reducir movimiento" del sistema no se anima nada: se ve el estado final.</summary>
+    public bool MovimientoReducido { get; set; }
+
+    /// <summary>Hora que se pinta en el cielo (sol o luna).</summary>
+    public DateTime Ahora { get; set; } = DateTime.Now;
+
+    /// <summary>Se pueden cortar los frutos maduros (una vez al día).</summary>
+    public bool PuedeCosechar { get; set; }
+
+    /// <summary>Se cortaron todos los frutos maduros; lleva cuántos.</summary>
+    public event Action<int>? Cosechado;
+
+    public bool Animando => _efecto != Efecto.Ninguno || _particulas.Count > 0 || (Arbol.Plaga && !MovimientoReducido);
+
+    /// <summary>Segundos que dura un efecto (para esperar antes de mostrar un diálogo).</summary>
+    public static float Duracion(Efecto e) => e switch
+    {
+        Efecto.Crecer => 1.8f,
+        Efecto.Alivio => 2.6f,
+        Efecto.Grieta => 2.8f,
+        Efecto.Sacudida => 1.4f,
+        _ => 0,
+    };
+
+    public void Animar(Efecto efecto, GrowthStage? etapaAntes = null)
+    {
+        if (MovimientoReducido || _rect.Width <= 0) return;
+        _efecto = efecto;
+        _tEfecto = 0;
+        _etapaAntes = etapaAntes ?? Arbol.Etapa;
+        if (efecto == Efecto.Sacudida) SoltarHojas(5);
+    }
     private const float SegundosDeRiegoBase = 1.6f;
     private static readonly Color RaizTallo = Color.FromArgb("#5B5236");
     private static readonly Color RaizBola = Color.FromArgb("#3E3826");
@@ -105,9 +168,18 @@ public sealed class Escena : IDrawable
             estado.Plaga = false;
             estado.RaicesPodridas = false;
         }
-        Dibujo.Arbol.Dibujar(canvas, rect, estado, conCielo: true);
-
         var g = Geometria;
+        estado = Animado(estado);
+        Dibujo.Arbol.Cielo(canvas, rect, Ahora);
+        if (_efecto == Efecto.Alivio) Halo(canvas, g);
+        Dibujo.Arbol.Tierra(canvas, rect, estado);
+        canvas.SaveState();
+        Transformar(canvas, g);
+        Dibujo.Arbol.Dibujar(canvas, rect, estado, conCielo: false, conTierra: false);
+        canvas.RestoreState();
+        DibujarParticulas(canvas, g);
+        if (PuedeCosechar || _enCanasta > 0) Canasta(canvas, g);
+
         switch (Juego)
         {
             case MiniJuego.Plaga:
@@ -149,7 +221,23 @@ public sealed class Escena : IDrawable
     /// <summary>Avanza animaciones. Devuelve true si hay que repintar.</summary>
     public bool Tick(float dt)
     {
-        if (Juego != MiniJuego.Regar) return false;
+        _reloj += dt;
+        bool repintar = Arbol.Plaga && !MovimientoReducido;
+        if (_efecto != Efecto.Ninguno)
+        {
+            float antes = _tEfecto;
+            _tEfecto += dt;
+            // A media subida de etapa brotan las hojas, los pétalos o los destellos.
+            if (_efecto == Efecto.Crecer && antes < 0.6f && _tEfecto >= 0.6f) Celebrar();
+            if (_tEfecto >= Duracion(_efecto)) _efecto = Efecto.Ninguno;
+            repintar = true;
+        }
+        if (_particulas.Count > 0)
+        {
+            MoverParticulas(dt);
+            repintar = true;
+        }
+        if (Juego != MiniJuego.Regar) return repintar;
 
         var g = Geometria;
         foreach (var gota in _gotas)
@@ -178,6 +266,7 @@ public sealed class Escena : IDrawable
     {
         _ultimoToque = p;
         var g = Geometria;
+        if (Juego == MiniJuego.Ninguno && PuedeCosechar) Cortar(p, g);
         switch (Juego)
         {
             case MiniJuego.Plaga:
@@ -248,6 +337,234 @@ public sealed class Escena : IDrawable
     }
 
     private GeometriaArbol Geometria => Dibujo.Arbol.Geometria(_rect, Arbol.Etapa);
+
+    // ---------- Efectos ----------
+
+    private static float Suave(float t) => t * t * (3 - 2 * Math.Clamp(t, 0, 1));
+
+    private EstadoArbol Animado(EstadoArbol e)
+    {
+        var a = Copia(e);
+        a.Reloj = _reloj;
+        a.Cosechados = _cosechados;
+        if (Juego == MiniJuego.Regar) a.Humedad = Math.Clamp(_riego / SegundosDeRiego, 0, 1);
+        if (_efecto == Efecto.Grieta)
+        {
+            a.GrietaNueva = Math.Clamp((_tEfecto - 0.35f) / 0.8f, 0, 1);
+            a.LlegadaPlaga = Math.Clamp((_tEfecto - 1.3f) / 1.3f, 0, 1);
+        }
+        return a;
+    }
+
+    private void Transformar(ICanvas c, GeometriaArbol g)
+    {
+        float t = _tEfecto;
+        switch (_efecto)
+        {
+            case Efecto.Crecer:
+            {
+                // Desde el tamaño de la etapa anterior hasta un poco más grande, y rebota a su lugar.
+                var antes = Dibujo.Arbol.Geometria(_rect, _etapaAntes);
+                float inicio = g.Copa.Width > 0 && antes.Copa.Width > 0 ? antes.Copa.Width / g.Copa.Width : 0.55f;
+                float k = t < 0.7f
+                    ? inicio + (1.08f - inicio) * Suave(t / 0.7f)
+                    : 1.08f - 0.08f * Suave(Math.Min(1, (t - 0.7f) / 0.5f));
+                c.Translate(g.CentroX, g.Suelo);
+                c.Scale(k, k);
+                c.Translate(-g.CentroX, -g.Suelo);
+                break;
+            }
+            case Efecto.Alivio:
+            {
+                // Dos respiraciones hondas: se ensancha un poco y vuelve.
+                float r = MathF.Pow(MathF.Sin(MathF.PI * t / 1.3f), 2);
+                c.Translate(g.CentroX, g.Suelo);
+                c.Scale(1 + 0.02f * r, 1 + 0.045f * r);
+                c.Translate(-g.CentroX, -g.Suelo);
+                break;
+            }
+            case Efecto.Grieta when t < 0.4f:
+                c.Translate(MathF.Sin(t * 70) * g.Escala * 0.012f * (1 - t / 0.4f), 0);
+                break;
+            case Efecto.Sacudida:
+                c.Rotate(5f * MathF.Sin(t * 16) * MathF.Exp(-2.5f * t), g.CentroX, g.Suelo);
+                break;
+        }
+    }
+
+    private void Halo(ICanvas c, GeometriaArbol g)
+    {
+        float r = MathF.Pow(MathF.Sin(MathF.PI * _tEfecto / 1.3f), 2);
+        var z = g.Zona;
+        var area = new RectF(z.X - z.Width * 0.3f, z.Y - z.Height * 0.3f, z.Width * 1.6f, z.Height * 1.6f);
+        c.SetFillPaint(new RadialGradientPaint(
+            [new PaintGradientStop(0, Color.FromArgb("#FFF3C4").WithAlpha(0.55f * r)), new PaintGradientStop(1, Colors.Transparent)],
+            new Point(0.5, 0.5), 0.5), area);
+        c.FillEllipse(area);
+    }
+
+    private void Celebrar()
+    {
+        var g = Geometria;
+        var z = g.Zona;
+        var (tipo, colores) = Arbol.Etapa switch
+        {
+            GrowthStage.Flor => ('p', new[] { "#F6E4DC", "#F2B8C6", "#FBEFF2" }),
+            >= GrowthStage.FrutaInmadura => ('d', new[] { "#F7CF4A", "#FFF3C4", "#F2A65A" }),
+            _ => ('h', new[] { "#8DB255", "#6E9A4E", "#A9C77A" }),
+        };
+        for (int i = 0; i < 16; i++)
+        {
+            float a = Random.Shared.NextSingle() * MathF.Tau;
+            float v = g.Escala * (0.25f + Random.Shared.NextSingle() * 0.35f);
+            _particulas.Add(new Particula
+            {
+                Pos = new PointF(z.Center.X + MathF.Cos(a) * z.Width * 0.3f, z.Center.Y + MathF.Sin(a) * z.Height * 0.3f),
+                Vel = new PointF(MathF.Cos(a) * v, MathF.Sin(a) * v - g.Escala * 0.35f),
+                Giro = Random.Shared.NextSingle() * 360,
+                Vida = 1.6f, Total = 1.6f, Tipo = tipo,
+                Color = Color.FromArgb(colores[i % colores.Length]),
+            });
+        }
+    }
+
+    private void SoltarHojas(int cuantas)
+    {
+        var g = Geometria;
+        var z = g.Zona;
+        for (int i = 0; i < cuantas; i++)
+        {
+            _particulas.Add(new Particula
+            {
+                Pos = new PointF(z.X + z.Width * (0.15f + 0.7f * Random.Shared.NextSingle()), z.Y + z.Height * (0.3f + 0.5f * Random.Shared.NextSingle())),
+                Vel = new PointF(0, g.Escala * 0.12f),
+                Giro = Random.Shared.NextSingle() * 360,
+                Vida = 3.2f, Total = 3.2f, Tipo = 'h',
+                Color = Naturaleza.Hoja,
+            });
+        }
+    }
+
+    private void MoverParticulas(float dt)
+    {
+        var g = Geometria;
+        foreach (var q in _particulas)
+        {
+            q.Vida -= dt;
+            if (q.Tipo == 'f')
+            {
+                // Vuela en arco hasta la canasta.
+                float t = 1 - q.Vida / q.Total;
+                var desde = q.Vel; // origen guardado en Vel
+                float x = desde.X + (q.Destino.X - desde.X) * t;
+                float y = desde.Y + (q.Destino.Y - desde.Y) * t - MathF.Sin(MathF.PI * t) * g.Escala * 0.18f;
+                q.Pos = new PointF(x, y);
+                if (q.Vida <= 0) _enCanasta++;
+                continue;
+            }
+            if (q.EnSuelo) continue;
+            if (q.Tipo == 'h')
+            {
+                // Hoja: cae despacio meciéndose y se queda en el suelo hasta desvanecerse.
+                q.Pos = new PointF(q.Pos.X + MathF.Sin(q.Vida * 5) * g.Escala * 0.15f * dt, q.Pos.Y + q.Vel.Y * dt);
+                q.Giro += 90 * dt;
+                if (q.Pos.Y >= g.Suelo + g.Escala * 0.02f) q.EnSuelo = true;
+            }
+            else
+            {
+                q.Vel = new PointF(q.Vel.X * 0.98f, q.Vel.Y + g.Escala * 0.9f * dt);
+                q.Pos = new PointF(q.Pos.X + q.Vel.X * dt, q.Pos.Y + q.Vel.Y * dt);
+                q.Giro += 180 * dt;
+            }
+        }
+        _particulas.RemoveAll(q => q.Vida <= 0);
+    }
+
+    private void DibujarParticulas(ICanvas c, GeometriaArbol g)
+    {
+        foreach (var q in _particulas)
+        {
+            float alfa = q.Tipo == 'f' ? 1 : Math.Clamp(q.Vida / Math.Min(1f, q.Total), 0, 1);
+            c.SaveState();
+            c.Alpha = alfa;
+            switch (q.Tipo)
+            {
+                case 'h':
+                    Dibujo.Arbol.HojaSuelta(c, q.Pos.X, q.Pos.Y, g.Escala * 0.05f, q.Giro * MathF.PI / 180);
+                    break;
+                case 'p':
+                    c.Relleno(q.Color);
+                    c.Rotate(q.Giro, q.Pos.X, q.Pos.Y);
+                    c.FillEllipse(q.Pos.X - g.Escala * 0.012f, q.Pos.Y - g.Escala * 0.007f, g.Escala * 0.024f, g.Escala * 0.014f);
+                    break;
+                case 'd':
+                    c.Relleno(q.Color);
+                    c.FillCircle(q.Pos, g.Escala * 0.008f);
+                    break;
+                case 'f':
+                    c.Relleno(q.Color);
+                    c.FillCircle(q.Pos, g.Escala * 0.022f);
+                    break;
+            }
+            c.RestoreState();
+        }
+    }
+
+    // ---------- Cosecha ----------
+
+    private RectF CanastaRect(GeometriaArbol g) =>
+        new(_rect.Right - g.Escala * 0.30f, g.Suelo - g.Escala * 0.02f, g.Escala * 0.22f, g.Escala * 0.12f);
+
+    private void Canasta(ICanvas c, GeometriaArbol g)
+    {
+        var b = CanastaRect(g);
+        // Frutos ya en la canasta, asomando.
+        var frutos = Dibujo.Arbol.FrutosMaduros(g, Arbol);
+        var color = frutos.Count > 0 ? frutos[0].Color : Naturaleza.Miel;
+        c.Relleno(color);
+        for (int i = 0; i < Math.Min(_enCanasta, 8); i++)
+            c.FillCircle(b.X + b.Width * (0.2f + 0.6f * (i % 4) / 3f), b.Y + b.Height * (i < 4 ? 0.15f : -0.05f), g.Escala * 0.022f);
+        var cesto = new PathF(b.X, b.Y + b.Height * 0.15f);
+        cesto.LineTo(b.Right, b.Y + b.Height * 0.15f);
+        cesto.LineTo(b.Right - b.Width * 0.12f, b.Bottom);
+        cesto.LineTo(b.X + b.Width * 0.12f, b.Bottom);
+        cesto.Close();
+        c.SetFillPaint(Dibujo.Arbol.Degradado(Color.FromArgb("#C99A5B"), Color.FromArgb("#8A6232")), b);
+        c.FillPath(cesto);
+        c.StrokeColor = Color.FromArgb("#6E4B24").WithAlpha(0.6f);
+        c.StrokeSize = 1.5f;
+        for (int i = 1; i < 4; i++) c.DrawLine(b.X + b.Width * 0.06f * i, b.Y + b.Height * (0.15f + 0.2f * i), b.Right - b.Width * 0.06f * i, b.Y + b.Height * (0.15f + 0.2f * i));
+    }
+
+    private void Cortar(PointF p, GeometriaArbol g)
+    {
+        var frutos = Dibujo.Arbol.FrutosMaduros(g, Arbol);
+        for (int i = 0; i < frutos.Count; i++)
+        {
+            if (_cosechados.Contains(i) || Distancia(frutos[i].Pos, p) > g.Escala * 0.07f) continue;
+            _cosechados.Add(i);
+            var canasta = CanastaRect(g);
+            float vuelo = MovimientoReducido ? 0.01f : 0.7f;
+            _particulas.Add(new Particula
+            {
+                Pos = frutos[i].Pos, Vel = frutos[i].Pos, Tipo = 'f', Color = frutos[i].Color,
+                Destino = new PointF(canasta.Center.X, canasta.Y), Vida = vuelo, Total = vuelo,
+            });
+            if (_cosechados.Count == frutos.Count)
+            {
+                PuedeCosechar = false;
+                Cosechado?.Invoke(frutos.Count);
+            }
+            return;
+        }
+    }
+
+    /// <summary>Al cambiar de árbol o de día: frutos de nuevo en su rama y canasta vacía.</summary>
+    public void ReiniciarCosecha()
+    {
+        _cosechados.Clear();
+        _enCanasta = 0;
+    }
 
     private void Preparar()
     {

@@ -9,7 +9,7 @@ public enum TipoFondo
     Escena,
 }
 
-/// <summary>Escenas dibujadas a mano para el fondo (vectoriales, propias del proyecto).</summary>
+/// <summary>Escenas ilustradas para el fondo (piezas CC0 de Kenney recoloreadas; ver scripts/escenas).</summary>
 public enum EscenaFondo
 {
     Bosque,
@@ -103,10 +103,10 @@ public static class Paleta
     /// <summary>Colores de cielo y suelo de cada escena (para el velo y la vista previa).</summary>
     public static string EscenaArriba(EscenaFondo e) => e switch
     {
-        EscenaFondo.Jardin => "#F6E2A8",
-        EscenaFondo.CasaDeCampo => "#F4C98A",
-        EscenaFondo.Suburbio => "#F2A86B",
-        _ => "#E9D9A6",
+        EscenaFondo.Jardin => "#FBF1D6",
+        EscenaFondo.CasaDeCampo => "#FBE3B4",
+        EscenaFondo.Suburbio => "#E9B7A0",
+        _ => "#E8EDD2",
     };
 
     public static string EscenaAbajo(EscenaFondo e) => e switch
@@ -114,7 +114,7 @@ public static class Paleta
         EscenaFondo.Jardin => "#5E8A3C",
         EscenaFondo.CasaDeCampo => "#6E7E3A",
         EscenaFondo.Suburbio => "#4A3A4E",
-        _ => "#24391F",
+        _ => "#3F5E36",
     };
 
     public static string NombreEscena(EscenaFondo e) => e switch

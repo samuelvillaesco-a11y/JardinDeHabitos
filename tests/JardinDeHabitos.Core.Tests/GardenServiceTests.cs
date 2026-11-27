@@ -46,6 +46,22 @@ public class GardenServiceTests
     }
 
     [Fact]
+    public void EtapaConCheckInDeHoy_AvisaSoloElDiaQueCambia()
+    {
+        var v = Crear();
+        Assert.Equal(GrowthStage.Brote, v.EtapaConCheckInDeHoy); // semilla → brote con el primer check-in
+        Cumplir(v.Id, 6);                                         // día 6: árbol joven, mañana flor
+        var hoy = _svc.Jardin().Single();
+        Assert.Equal(6, hoy.Dias);
+        Assert.Equal(GrowthStage.Flor, hoy.EtapaConCheckInDeHoy);
+
+        _svc.CheckIn(v.Id, CheckInResult.Cumplido);
+        Assert.Null(_svc.Jardin().Single().EtapaConCheckInDeHoy); // ya hizo check-in hoy
+        _reloj.AvanzarDias(1);
+        Assert.Null(_svc.Jardin().Single().EtapaConCheckInDeHoy); // día 7 → 8: sigue en flor
+    }
+
+    [Fact]
     public void CrearHabito_EspecieUsada_Lanza()
     {
         Crear(MalHabito.Cigarro, "Manzano");

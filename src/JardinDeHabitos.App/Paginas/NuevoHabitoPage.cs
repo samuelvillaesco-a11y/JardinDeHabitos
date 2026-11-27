@@ -34,20 +34,6 @@ public sealed class NuevoHabitoPage : ContentPage
     private readonly Border _aviso;
     private readonly Label _textoAviso = Tema.Texto("", 14);
 
-    private readonly Chips<bool> _tienePrevio = new([(false, "No"), (true, "Sí")], iniciales: [false]);
-    private readonly Entry _previoCantidad = new()
-    {
-        Placeholder = "0",
-        Keyboard = Keyboard.Numeric,
-        FontFamily = Tema.Fuente,
-        FontSize = 18,
-        TextColor = Tema.Hueso,
-        PlaceholderColor = Tema.HuesoTenue,
-        BackgroundColor = Tema.MusgoClaro,
-        WidthRequest = 90,
-    };
-    private readonly Chips<int> _previoUnidad = new([(1, "días"), (30, "meses"), (365, "años")], iniciales: [1]);
-    private readonly Grid _filaPrevio;
     private readonly Chips<string> _apoyo = new([("grupo", "Grupo de apoyo"), ("terapia", "Terapia")], maximo: 2);
 
     private readonly Label _error = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
@@ -85,19 +71,8 @@ public sealed class NuevoHabitoPage : ContentPage
             Children = { Tema.Texto("Antes de empezar, cuídate", 16, Tema.FuenteNegrita, Tema.Miel), _textoAviso },
         }, borde: Tema.Miel);
 
-        _filaPrevio = new Grid
-        {
-            ColumnDefinitions = [new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star)],
-            ColumnSpacing = 10,
-        };
-        _filaPrevio.Add(_previoCantidad, 0);
-        _filaPrevio.Add(_previoUnidad, 1);
-        _previoCantidad.VerticalOptions = LayoutOptions.Start;
-        var notaPrevio = Tema.Texto("Tu árbol nacerá con esa edad.", 14, color: Tema.HuesoTenue);
-        _tipo.Cambio += ActualizarTipo;
-        _tienePrevio.Cambio += () => _filaPrevio.IsVisible = notaPrevio.IsVisible = _tienePrevio.Elegido;
-        _filaPrevio.IsVisible = notaPrevio.IsVisible = false;
 
+        _tipo.Cambio += ActualizarTipo;
         var plantar = Tema.Boton("Plantar", Tema.Miel);
         plantar.Clicked += Plantar;
 
@@ -106,11 +81,7 @@ public sealed class NuevoHabitoPage : ContentPage
             Spacing = 8,
             Children =
             {
-                Tema.Texto("Unas preguntas (opcionales)", 17, Tema.FuenteNegrita),
-                Tema.Texto("¿Ya llevas tiempo limpio que puedas comprobar? Por ejemplo, una ficha de tu grupo.", 15),
-                _tienePrevio,
-                _filaPrevio,
-                notaPrevio,
+                Tema.Texto("Una pregunta (opcional)", 17, Tema.FuenteNegrita),
                 Tema.Texto("¿Tienes acompañamiento?", 15),
                 _apoyo,
                 Tema.Texto("Si eliges alguno, podrás registrar cada vez que vayas.", 14, color: Tema.HuesoTenue),
@@ -189,23 +160,12 @@ public sealed class NuevoHabitoPage : ContentPage
             return;
         }
 
-        int diasPrevios = 0;
-        if (_tienePrevio.Elegido)
-        {
-            if (!int.TryParse(_previoCantidad.Text, out int cantidad) || cantidad < 0 || cantidad > 50 * 365)
-            {
-                _error.Text = "Escribe el tiempo previo como un número (por ejemplo, 10).";
-                return;
-            }
-            diasPrevios = Math.Min(cantidad * _previoUnidad.Elegido, GardenService.MaxDiasPrevios);
-        }
-
         _plantando = true;
         try
         {
             var tipo = Tipo;
             var dias = tipo == HabitType.Moderable ? _dias.Elegidos : [];
-            Servicios.Jardin.CrearHabito(info.Habito, especie, tipo, dias, diasPrevios,
+            Servicios.Jardin.CrearHabito(info.Habito, especie, tipo, dias, diasPrevios: 0,
                 grupo: _apoyo.Elegidos.Contains("grupo"), terapia: _apoyo.Elegidos.Contains("terapia"));
             await Navigation.PopAsync();
         }
