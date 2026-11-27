@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<!-- Logo de Jardín de Hábitos: semilla abierta con un brote cuyas dos hojas forman un corazón.
+     Dibujo propio (PolyForm Noncommercial 1.0.0). El filtro "tinta" da el borde de tinta irregular. -->
+<defs>
+  <filter id="tinta" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
+  <linearGradient id="ocre" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C08A3E"/><stop offset="1" stop-color="#8A5A0B"/></linearGradient>
+  <linearGradient id="hoja" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5E8A3C"/><stop offset="1" stop-color="#2F5020"/></linearGradient>
+</defs>
+<g filter="url(#tinta)">
+  <path d="M256 70 C360 120 400 250 352 360 C320 432 192 432 160 360 C112 250 152 120 256 70 Z" fill="url(#ocre)"/>
+  <path d="M256 104 C340 148 368 254 330 344 C304 404 208 404 182 344 C144 254 172 148 256 104 Z" fill="#F4EEDF"/>
+  <path d="M256 384 L256 300" stroke="#2F5020" stroke-width="12" stroke-linecap="round"/>
+  <path d="M254 302 C214 276 168 246 170 204 C172 172 206 158 232 172 C246 180 252 192 254 206 Z" fill="url(#hoja)"/>
+  <path d="M258 302 C298 276 344 246 342 204 C340 172 306 158 280 172 C266 180 260 192 258 206 Z" fill="url(#hoja)"/>
+  <path d="M252 296 C230 262 214 226 206 196 M258 296 C280 262 296 226 306 196" stroke="#A9C77A" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <path d="M232 246 L214 232 M240 266 L220 258 M280 246 L298 232 M272 266 L292 258" stroke="#A9C77A" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <path d="M210 372 C230 388 282 388 302 372" stroke="#8A5A0B" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.7"/>
+</g>
+</svg>

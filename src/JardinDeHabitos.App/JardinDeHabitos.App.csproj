@@ -31,8 +31,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" />
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#F4EEDF" BaseSize="128,128" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.png" />
+		<MauiSplashScreen Include="Resources\Splash\splash.png" Color="#F4EEDF" BaseSize="128,128" />
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\escena_*.png" BaseSize="360,640" />
 		<MauiFont Include="Resources\Fonts\*" />

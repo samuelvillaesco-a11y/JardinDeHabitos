@@ -164,6 +164,13 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Candado propio ilegible (Preferences dice PIN/patrón/clave pero SecureStorage no lo entrega): ya no se trata como "sin candado"; pide el bloqueo del teléfono y, si no hay, NO deja entrar (`Seguridad.SecretoPerdidoAsync`).
 - Intentos de PIN en serie (`SemaphoreSlim`): dos toques simultáneos ya no cuentan como un solo fallo.
 
+## v1.4 en curso: modo juego (2026-11-27, rama `v1.4/juego`)
+- Sin "tiempo previo" al plantar (decisión del usuario: no se puede comprobar sin internet). El núcleo lo conserva para árboles viejos.
+- Escena del árbol (`Dibujo/Escena.cs`): efectos `Crecer` (rebote + pétalos/hojas/destellos), `Alivio` (respira al cumplir), `Grieta` (al romper: grieta que se abre y bichos que suben), `Sacudida` (al podar caen hojas que se desvanecen); la tierra se moja poco a poco al regar; cosecha diaria de frutos a una canasta (`Preferences cosecha.<id>`). Todo se salta si Android tiene las animaciones quitadas. El árbol NO lleva cara (pedido del usuario): el ánimo va en una calcomanía de esquina con emoji.
+- Cielo con la hora (`Arbol.Cielo(c, r, ahora)`): sol en arco 6:30–19:30, ocaso, noche con estrellas y luna en su fase real (luna nueva de referencia 6-ene-2000 18:14 UTC). Cambiar la hora del emulador con `date` lo tumba (gfxstream): no repetirlo.
+- Aviso de las 9:00 "Hoy puede florecer tu …" con imagen (`VistaArbol.EtapaConCheckInDeHoy`, solo Flor en adelante). Ícono de notificación monocromo `ic_notificacion.xml`.
+- Escenas de fondo: piezas CC0 de Kenney recoloreadas (`scripts/escenas/componer.py`, necesita el zip de OpenGameArt). Logo nuevo: semilla con brote-corazón (`scripts/logo/`). El usuario pidió algo maduro: nada de caritas.
+
 ## v1.3: pulido de la auditoría y copia cifrada (2026-11-27)
 - Copia del jardín (Seguridad › Guardar una copia / Recuperar desde una copia): `Core/Respaldo.cs`. Es la base SQLCipher completa exportada con `sqlcipher_export` y cifrada con la contraseña del usuario (≥ 10 caracteres, nunca se guarda). Recuperar: `Preparar` (abre con la contraseña, valida versión y la recifra con la llave del teléfono, sin tocar nada) → `Instalar` (la base actual queda en `jardin.db3.antes-de-importar-<fecha>`, nunca se borra). Archivos por Storage Access Framework (`Platforms/Android/Archivos.cs`, sin permisos de almacenamiento).
 - Selectores del sistema (archivos, contactos): `App.SalidaAlSelector()` da 3 min de gracia para que la sección con llave no se cierre a media operación.

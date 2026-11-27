@@ -475,8 +475,8 @@ public static class Arbol
             else
             {
                 float x0 = g.CentroX + s * (-0.26f + i * 0.08f), y0 = g.Suelo + s * 0.005f;
-                zigzag = [new(x0, y0), new(x0 + s * 0.02f, y0 + s * 0.025f), new(x0 - s * 0.005f, y0 + s * 0.045f), new(x0 + s * 0.015f, y0 + s * 0.07f)];
-                grosor = s * 0.007f;
+                zigzag = [new(x0, y0), new(x0 + s * 0.03f, y0 + s * 0.03f), new(x0 - s * 0.01f, y0 + s * 0.06f), new(x0 + s * 0.025f, y0 + s * 0.095f)];
+                grosor = s * 0.011f;
             }
             var path = Parcial(zigzag, avance);
             c.StrokeColor = Color.FromArgb("#2A1A10");

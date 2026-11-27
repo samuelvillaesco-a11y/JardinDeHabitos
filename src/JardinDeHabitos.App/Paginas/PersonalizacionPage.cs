@@ -59,7 +59,7 @@ public sealed class PersonalizacionPage : ContentPage
         usarDegradado.Clicked += (_, _) => Elegir(Fondo.Degradado(_colorA, _colorB));
         var colorLibre = Tema.Boton("Elegir cualquier color", Tema.MusgoClaro, Tema.Hueso);
         colorLibre.Clicked += (_, _) => AbrirSelector(Destino.Solido, actual.ColorA);
-        var restablecer = Tema.Boton("Volver al verde musgo", Colors.Transparent, Tema.HuesoTenue);
+        var restablecer = Tema.Boton("Volver al papel (predeterminado)", Colors.Transparent, Tema.HuesoTenue);
         restablecer.Clicked += (_, _) => Elegir(Fondo.PorDefecto);
 
         var filaPropio = new Grid { ColumnDefinitions = [new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto)], ColumnSpacing = 12 };

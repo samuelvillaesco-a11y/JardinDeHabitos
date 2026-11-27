@@ -46,7 +46,8 @@ public static class Notificaciones
         var alTocar = abrir is null ? null : PendingIntent.GetActivity(context, 0, abrir, PendingIntentFlags.Immutable);
 
         var aviso = new Notification.Builder(context, Canal)
-            .SetSmallIcon(Resource.Mipmap.appicon)
+            .SetSmallIcon(Resource.Drawable.ic_notificacion)
+            .SetColor(Android.Graphics.Color.ParseColor("#3F6A2A"))
             .SetContentTitle(titulo)
             .SetContentText(texto)
             .SetStyle(imagen is null

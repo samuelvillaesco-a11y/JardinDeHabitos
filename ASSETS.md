@@ -9,6 +9,7 @@
 | Fuente Nunito (Regular, Bold) | `src/JardinDeHabitos.App/Resources/Fonts/Nunito-*.ttf` | The Nunito Project Authors | SIL Open Font License 1.1 (texto en `licencias/Nunito-OFL.txt`) | https://github.com/googlefonts/nunito |
 | Fuente Lora SemiBold (títulos; instancia fija wght=600 de la variable) | `src/JardinDeHabitos.App/Resources/Fonts/Lora-SemiBold.ttf` | The Lora Project Authors | SIL Open Font License 1.1 (texto en `licencias/Lora-OFL.txt`) | https://github.com/cyrealtype/Lora-Cyrillic |
 | Íconos Lucide (20 íconos recortados de lucide-static 1.81.0) | `src/JardinDeHabitos.App/Resources/Fonts/Lucide.ttf` | Lucide Contributors | ISC (texto en `licencias/Lucide-ISC.txt`) | https://lucide.dev |
+| Logo e ícono: semilla abierta con brote-corazón (textura de tinta y papel) | `scripts/logo/semilla.svg` → `Resources/AppIcon/appiconfg.png`, `Resources/Splash/splash.png`, `fastlane/.../icon.png` (con `scripts/logo/generar.sh`) | Proyecto Jardín de Hábitos | PolyForm Noncommercial 1.0.0 | Dibujo propio |
 | Título "Jardín de Hábitos" de la pantalla de inicio | `src/JardinDeHabitos.App/Platforms/Android/Resources/drawable/marca_titulo.xml` | Proyecto Jardín de Hábitos (letras de Lora SemiBold convertidas a trazos) | SIL OFL 1.1 (derivado de Lora) | Generado con hb-shape + fontTools |
 | Botón "Consíguelo en Obtainium" (solo en el README) | `docs/insignias/obtainium.png` | Proyecto Obtainium | Gráfico oficial para enlazar a Obtainium (su wiki pide alojar una copia) | https://wiki.obtainium.imranr.dev/deep_links/ |
 
