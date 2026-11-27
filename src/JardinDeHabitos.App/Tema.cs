@@ -25,6 +25,8 @@ public static class Tema
     public static readonly Color Tierra = Naturaleza.Tierra;
     public static readonly Color TierraOscura = Naturaleza.TierraOscura;
     public static readonly Color Corteza = Naturaleza.Corteza;
+    /// <summary>Texto sobre tierra o madera: claro en las dos paletas (la tierra no cambia con el fondo).</summary>
+    public static readonly Color SobreTierra = Color.FromArgb("#F3EBD3");
 
     public static void Usar(bool oscuro)
     {

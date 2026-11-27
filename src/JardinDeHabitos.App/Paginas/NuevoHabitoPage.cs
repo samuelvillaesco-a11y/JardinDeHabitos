@@ -83,7 +83,7 @@ public sealed class NuevoHabitoPage : ContentPage
         {
             Spacing = 6,
             Children = { Tema.Texto("Antes de empezar, cuídate", 16, Tema.FuenteNegrita, Tema.Miel), _textoAviso },
-        }, Tema.TierraOscura, Tema.Miel);
+        }, borde: Tema.Miel);
 
         _filaPrevio = new Grid
         {

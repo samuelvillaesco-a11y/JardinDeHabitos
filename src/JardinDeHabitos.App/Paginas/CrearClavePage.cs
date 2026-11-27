@@ -188,7 +188,7 @@ public sealed class CrearClavePage : ContentPage, IPrivada
                 {
                     Tema.Titulo("Tu código de recuperación", 28),
                     Tema.Texto("Anótalo en papel y guárdalo. Si olvidas tu PIN o patrón, es la única forma de entrar. No se volverá a mostrar.", 16),
-                    Tema.Parcela(Tema.Texto(codigo, 26, Tema.FuenteTitulo, Tema.Miel), Tema.TierraOscura, Tema.Miel),
+                    Tema.Parcela(Tema.Texto(codigo, 26, Tema.FuenteTitulo, Tema.Miel), borde: Tema.Miel),
                     Tema.Texto("No lo guardes en una captura de pantalla: esta pantalla no permite capturas.", 14, color: Tema.HuesoTenue),
                     listo,
                 },

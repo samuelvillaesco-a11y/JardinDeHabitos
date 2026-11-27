@@ -199,7 +199,7 @@ public sealed class ArbolPage : ContentPage, IRefrescable
         }
 
         var cumpli = Tema.Boton("Lo cumplí", Tema.Hoja);
-        var rompi = Tema.Boton("Lo rompí", Tema.Tierra, Tema.Hueso);
+        var rompi = Tema.Boton("Lo rompí", Tema.Tierra, Tema.SobreTierra);
         cumpli.Clicked += async (_, _) => await HacerCheckIn(CheckInResult.Cumplido);
         rompi.Clicked += async (_, _) => await HacerCheckIn(CheckInResult.Roto);
 
