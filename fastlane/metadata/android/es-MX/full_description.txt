@@ -1,4 +1,5 @@
 <p>Cada hábito que quieres dejar es un árbol. Cada día que lo cumples, tu árbol crece: de semilla a brote, flor, fruto y, al año, fruta legendaria.</p>
+<p><b>Vivo:</b> tu árbol respira cuando cumples, se agrieta si tropiezas, crece con una pequeña fiesta al cambiar de etapa y da frutos que puedes cosechar. El cielo sigue la hora del día, con la luna en su fase real de noche.</p>
 <p><b>Discreto:</b> en el jardín y en las notificaciones solo se ve la especie del árbol, nunca el hábito. Tu estante de logros y tu diario van bajo llave (bloqueo del teléfono, PIN o patrón propio).</p>
 <p><b>Con fundamento médico:</b> los tiempos de los logros siguen la evidencia (NIAAA, DSM-5, NCI, NHS, FDA). Alcohol y sustancias muestran un aviso médico. Una recaída no es un fracaso: el árbol enferma, lo cuidas con mini-juegos y vuelve a crecer.</p>
 <p><b>Privado de verdad:</b> la app no tiene permiso de internet, no usa cuentas ni rastreadores, guarda todo cifrado (SQLCipher) solo en tu teléfono y no hace respaldos en la nube.</p>

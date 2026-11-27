@@ -41,6 +41,8 @@ Dejar un hábito (alcohol, cigarro, apuestas, pornografía, azúcar, pantallas�
 - **Blog botánico (bajo llave):** tu diario y un registro de un minuto al día: ánimo, ganas, emociones, qué las detonó y síntomas. Gráficas de cómo vas (ánimo, ganas, mapa de síntomas) y lo que más se repite. Los síntomas salen de escalas clínicas (Minnesota, CIWA-Ar, COWS) según tus árboles, y las señales de alarma te llevan directo a la Línea de la Vida o al 911.
 - **Candado a tu gusto:** el mismo bloqueo del teléfono, un PIN propio o un patrón propio, para el estante de logros, el blog o toda la app.
 - **Pedir ayuda sin candado:** botón de 911, tus "jardineros" (personas de confianza) y la Línea de la Vida. Widget de pantalla de inicio para llamar a tu jardinero con un toque.
+- **Árbol vivo:** respira cuando cumples, se agrieta si tropiezas, crece con una pequeña celebración al cambiar de etapa; riegas y la tierra se moja, podas y caen hojas, y cosechas sus frutos. El cielo sigue la hora (sol, atardecer y la luna en su fase real).
+- **Avisos que anticipan:** "Hoy puede florecer tu manzano", con el dibujo de cómo quedará.
 - **Copia cifrada de tu jardín** para pasarlo a otro teléfono, con una contraseña que tú eliges.
 - **Música tranquila de bosque** (se apaga en Ajustes) y **fondos personalizables** en tonos calmantes.
 

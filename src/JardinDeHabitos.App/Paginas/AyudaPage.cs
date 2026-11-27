@@ -16,7 +16,7 @@ public sealed class AyudaPage : ContentPage
         Title = "Pedir ayuda";
         BackgroundColor = Tema.Musgo;
         var pila = new VerticalStackLayout { Padding = new Thickness(18, 20, 18, 28), Spacing = 14 };
-        pila.Add(Tema.Titulo("🆘 Pedir ayuda", 30));
+        pila.Add(Tema.Titulo("Pedir ayuda", 30));
         pila.Add(Tema.Texto("Pedir ayuda es parte de crecer. Nada de esto se registra en la app.", 15, color: Tema.HuesoTenue));
 
         var emergencia = Tema.Boton(Iconos.Telefono, "Llamar al 911", Color.FromArgb("#A8402B"), Colors.White);

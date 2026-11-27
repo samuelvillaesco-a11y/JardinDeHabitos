@@ -82,7 +82,7 @@ public sealed class PersonalizacionPage : ContentPage
                     Rejilla(Paleta.Solidos.Select(s => (View)Ficha(Muestra(s.Color, 56, 56, 28), s.Nombre, Fondo.Solido(s.Color)))),
                     Seccion("Degradados", null),
                     Rejilla(Paleta.Degradados.Select(d => (View)Ficha(Muestra(d.A, 96, 64, 16, d.B), d.Nombre, Fondo.Degradado(d.A, d.B)))),
-                    Seccion("Escenas", "Dibujadas para el jardín."),
+                    Seccion("Escenas", "Ilustraciones de jardín, campo, barrio y bosque."),
                     Rejilla(Enum.GetValues<EscenaFondo>().Select(e => (View)Ficha(Escenario(e), Paleta.NombreEscena(e), Fondo.DeEscena(e)))),
                     Seccion("Tu propio degradado", "Toca cada círculo para elegir sus colores."),
                     filaPropio,

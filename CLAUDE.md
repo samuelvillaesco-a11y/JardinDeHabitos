@@ -16,7 +16,7 @@ Spec completo: `docs/superpowers/specs/2026-11-19-jardin-secreto-logros-design.m
 
 **Discreción:** fuera del estante nunca se muestra el hábito, solo la especie del árbol (jardín, árbol, notificaciones, diálogos). Notificación de logro: siempre "🏆 ¡Desbloqueaste un logro!" / "Abre tu jardín para verlo."
 
-**Hábitos:** se eligen de `CatalogoHabitos` (alfabético, "Otros" al final); nunca se escriben. Solo abstinencia: Apuestas, Pornografía, Sustancias. El resto elige modo. Alcohol y Sustancias muestran aviso médico (Línea de la Vida 800 911 2000). Un árbol por hábito (salvo Otros) y una especie por árbol (10 especies en `EspeciesDeArbol`). Cuestionario opcional: tiempo previo comprobable (nace con esos días) y grupo/terapia (habilita registro de asistencia).
+**Hábitos:** se eligen de `CatalogoHabitos` (alfabético, "Otros" al final); nunca se escriben. Solo abstinencia: Apuestas, Pornografía, Sustancias. El resto elige modo. Alcohol y Sustancias muestran aviso médico (Línea de la Vida 800 911 2000). Un árbol por hábito (salvo Otros) y una especie por árbol (10 especies en `EspeciesDeArbol`). Cuestionario opcional: grupo/terapia (habilita registro de asistencia). El "tiempo previo" se quitó en v1.4 (no se puede comprobar sin internet); el núcleo lo conserva para árboles viejos y las compilaciones Debug lo ofrecen para probar etapas.
 
 **Crecimiento:** `Habit.DiasDeCrecimiento` (no calendario). +1 por check-in Cumplido o día libre (si el último día normal tuvo check-in), solo si el árbol no está en cuidado. Sin check-in se pausa.
 
@@ -164,11 +164,14 @@ Fase 2 unida a `main` (fast-forward, 46856b7) e instalada en el teléfono el 202
 - Candado propio ilegible (Preferences dice PIN/patrón/clave pero SecureStorage no lo entrega): ya no se trata como "sin candado"; pide el bloqueo del teléfono y, si no hay, NO deja entrar (`Seguridad.SecretoPerdidoAsync`).
 - Intentos de PIN en serie (`SemaphoreSlim`): dos toques simultáneos ya no cuentan como un solo fallo.
 
-## v1.4 en curso: modo juego (2026-11-27, rama `v1.4/juego`)
+## v1.4: modo juego (2026-11-27)
 - Sin "tiempo previo" al plantar (decisión del usuario: no se puede comprobar sin internet). El núcleo lo conserva para árboles viejos.
 - Escena del árbol (`Dibujo/Escena.cs`): efectos `Crecer` (rebote + pétalos/hojas/destellos), `Alivio` (respira al cumplir), `Grieta` (al romper: grieta que se abre y bichos que suben), `Sacudida` (al podar caen hojas que se desvanecen); la tierra se moja poco a poco al regar; cosecha diaria de frutos a una canasta (`Preferences cosecha.<id>`). Todo se salta si Android tiene las animaciones quitadas. El árbol NO lleva cara (pedido del usuario): el ánimo va en una calcomanía de esquina con emoji.
 - Cielo con la hora (`Arbol.Cielo(c, r, ahora)`): sol en arco 6:30–19:30, ocaso, noche con estrellas y luna en su fase real (luna nueva de referencia 6-ene-2000 18:14 UTC). Cambiar la hora del emulador con `date` lo tumba (gfxstream): no repetirlo.
 - Aviso de las 9:00 "Hoy puede florecer tu …" con imagen (`VistaArbol.EtapaConCheckInDeHoy`, solo Flor en adelante). Ícono de notificación monocromo `ic_notificacion.xml`.
+- Escenas: velo mínimo 0.72 (`Fondo.VeloMinimoEscena`): sus árboles y cercas a media pantalla tapaban el texto.
+- Botones de prueba (galería, modo acelerado): solo Debug, en Ajustes › Acerca de.
+- Android: `Relleno` usa un degradado de un color (una SolidPaint no reemplaza el degradado que vuelve con RestoreState).
 - Escenas de fondo: piezas CC0 de Kenney recoloreadas (`scripts/escenas/componer.py`, necesita el zip de OpenGameArt). Logo nuevo: semilla con brote-corazón (`scripts/logo/`). El usuario pidió algo maduro: nada de caritas.
 
 ## v1.3: pulido de la auditoría y copia cifrada (2026-11-27)

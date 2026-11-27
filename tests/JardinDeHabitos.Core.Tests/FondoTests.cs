@@ -6,6 +6,13 @@ namespace JardinDeHabitos.Core.Tests;
 public class FondoTests
 {
     [Fact]
+    public void Escenas_LlevanVeloMinimo_PorSusDetalles()
+    {
+        foreach (var e in Enum.GetValues<EscenaFondo>())
+            Assert.True(Fondo.DeEscena(e).Velo >= Fondo.VeloMinimoEscena, e.ToString());
+    }
+
+    [Fact]
     public void PorDefecto_EsPapel_YNoNecesitaVelo()
     {
         Assert.Equal(TipoFondo.Solido, Fondo.PorDefecto.Tipo);

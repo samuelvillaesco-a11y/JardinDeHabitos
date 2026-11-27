@@ -53,42 +53,11 @@ public sealed class JardinPage : ContentPage, IRefrescable
                     _fecha,
                     _aviso,
                     _cuadricula,
-#if DEBUG
-                    BotonGaleria(),
-                    BotonAcelerado(),
-#endif
                 },
             },
         };
     }
 
-#if DEBUG
-    private Button BotonGaleria()
-    {
-        var b = Tema.Boton("Galería de etapas (debug)", Colors.Transparent, Tema.HuesoTenue);
-        b.Clicked += async (_, _) => await this.UnaVez(() => new GaleriaPage());
-        return b;
-    }
-
-    private Button BotonAcelerado()
-    {
-        static string Texto() => Servicios.Acelerado
-            ? "Modo acelerado: ENCENDIDO (1 día = 1 min)"
-            : "Modo acelerado: apagado (debug)";
-        var b = Tema.Boton(Texto(), Colors.Transparent, Tema.HuesoTenue);
-        b.Clicked += async (_, _) =>
-        {
-            if (!Servicios.Acelerado && !await DisplayAlertAsync("Modo acelerado",
-                    "Un minuto real será un día. Usa un jardín de prueba aparte; tu jardín real no cambia.",
-                    "Encender", "Cancelar"))
-                return;
-            Servicios.CambiarAcelerado(!Servicios.Acelerado);
-            b.Text = Texto();
-            AlVolver();
-        };
-        return b;
-    }
-#endif
 
     protected override void OnAppearing()
     {

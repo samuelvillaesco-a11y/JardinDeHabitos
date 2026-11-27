@@ -83,6 +83,8 @@ public sealed class AjustesPage : ContentPage
         parcela.GestureRecognizers.Add(toque);
         return parcela;
     }
+
+
 }
 
 /// <summary>Política de privacidad: corta, honesta y verificable.</summary>
@@ -169,8 +171,40 @@ public sealed class AcercaDePage : ContentPage
                             Tema.Texto("Si tu hábito pone en riesgo tu salud, busca apoyo médico. En México: Línea de la Vida 800 911 2000 (gratis, 24 h). Urgencias: 911.", 14),
                         },
                     }),
+#if DEBUG
+                    // Herramientas de prueba: no existen en la app publicada.
+                    BotonGaleria(),
+                    BotonAcelerado(),
+#endif
                 },
             },
         };
     }
+
+#if DEBUG
+    private Button BotonGaleria()
+    {
+        var b = Tema.Boton("Galería de etapas (debug)", Colors.Transparent, Tema.HuesoTenue);
+        b.Clicked += async (_, _) => await this.UnaVez(() => new GaleriaPage());
+        return b;
+    }
+
+    private Button BotonAcelerado()
+    {
+        static string Texto() => Servicios.Acelerado
+            ? "Modo acelerado: ENCENDIDO (1 día = 1 min)"
+            : "Modo acelerado: apagado (debug)";
+        var b = Tema.Boton(Texto(), Colors.Transparent, Tema.HuesoTenue);
+        b.Clicked += async (_, _) =>
+        {
+            if (!Servicios.Acelerado && !await DisplayAlertAsync("Modo acelerado",
+                    "Un minuto real será un día. Usa un jardín de prueba aparte; tu jardín real no cambia.",
+                    "Encender", "Cancelar"))
+                return;
+            Servicios.CambiarAcelerado(!Servicios.Acelerado);
+            b.Text = Texto();
+        };
+        return b;
+    }
+#endif
 }

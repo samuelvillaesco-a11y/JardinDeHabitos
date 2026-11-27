@@ -54,7 +54,14 @@ public sealed record Fondo(TipoFondo Tipo, string ColorA, string ColorB, EscenaF
     public bool Oscuro => VeloCon(Paleta.TextoClaro, Paleta.Musgo) < VeloCon(Paleta.Tinta, Paleta.Papel);
 
     /// <summary>Opacidad del velo para que el texto se lea (WCAG ≥ 4.5:1). 0 si no hace falta.</summary>
-    public double Velo => Oscuro ? VeloCon(Paleta.TextoClaro, Paleta.Musgo) : VeloCon(Paleta.Tinta, Paleta.Papel);
+    public double Velo => Math.Max(Tipo == TipoFondo.Escena ? VeloMinimoEscena : 0,
+        Oscuro ? VeloCon(Paleta.TextoClaro, Paleta.Musgo) : VeloCon(Paleta.Tinta, Paleta.Papel));
+
+    /// <summary>
+    /// Las escenas ilustradas tienen árboles, casas y cercas a media pantalla que el cálculo por
+    /// cielo y suelo no ve: con este velo mínimo el texto se lee sobre cualquier detalle.
+    /// </summary>
+    public const double VeloMinimoEscena = 0.72;
 
     public string ColorVelo => Oscuro ? Paleta.Musgo : Paleta.Papel;
 
