@@ -38,6 +38,13 @@ public sealed class NuevoHabitoPage : ContentPage
 
     private readonly Label _error = Tema.Texto("", 15, Tema.FuenteNegrita, Tema.Miel);
     private bool _plantando;
+#if DEBUG
+    // Solo compilaciones de prueba: nacer con días para probar etapas grandes (poda, cosecha).
+    private readonly Entry _diasDebug = new() { Placeholder = "Días previos (debug)", Keyboard = Keyboard.Numeric };
+    private int DiasPrevios => int.TryParse(_diasDebug.Text, out int d) ? Math.Clamp(d, 0, GardenService.MaxDiasPrevios) : 0;
+#else
+    private static int DiasPrevios => 0;
+#endif
 
     public NuevoHabitoPage()
     {
@@ -102,6 +109,9 @@ public sealed class NuevoHabitoPage : ContentPage
                     _seccionTipo,
                     _seccionDias,
                     cuestionario,
+#if DEBUG
+                    _diasDebug,
+#endif
                     Tema.Texto("Elige tu árbol", 17, Tema.FuenteNegrita),
                     _especie,
                     _error,
@@ -165,7 +175,7 @@ public sealed class NuevoHabitoPage : ContentPage
         {
             var tipo = Tipo;
             var dias = tipo == HabitType.Moderable ? _dias.Elegidos : [];
-            Servicios.Jardin.CrearHabito(info.Habito, especie, tipo, dias, diasPrevios: 0,
+            Servicios.Jardin.CrearHabito(info.Habito, especie, tipo, dias, diasPrevios: DiasPrevios,
                 grupo: _apoyo.Elegidos.Contains("grupo"), terapia: _apoyo.Elegidos.Contains("terapia"));
             await Navigation.PopAsync();
         }
